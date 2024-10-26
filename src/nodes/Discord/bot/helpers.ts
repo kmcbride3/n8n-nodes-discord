@@ -280,6 +280,11 @@ export const execution = async (
   })
 }
 
+export interface IExecutionResponse {
+  finished: boolean // Indicates if the execution has finished
+  stoppedAt: Date | null // The time the execution was stopped, or null if still running
+}
+
 export const placeholderLoading = async (placeholder: Message, placeholderMatchingId: string, txt: string) => {
   state.placeholderMatching[placeholderMatchingId] = placeholder.id
   state.placeholderWaiting[placeholderMatchingId] = true
