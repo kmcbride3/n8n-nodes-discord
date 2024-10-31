@@ -1,8 +1,6 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { includeIgnoreFile } from '@eslint/compat';
-import js from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import typescriptEslintPlugin from '@typescript-eslint/eslint-plugin';
 import typescriptEslintParser from '@typescript-eslint/parser';
 import simpleImportSortPlugin from 'eslint-plugin-simple-import-sort';
@@ -59,7 +57,26 @@ export default [
       '@typescript-eslint': typescriptEslintPlugin,
       'simple-import-sort': simpleImportSortPlugin,
       'prettier': prettierPlugin,
-      'n8n-nodes-base': n8nNodesBasePlugin
+      'n8n-nodes-base': n8nNodesBasePlugin,
+    },
+    rules: {
+      'prettier/prettier': [
+        'error',
+        {
+          trailingComma: 'all',
+          tabWidth: 2,
+          semi: false,
+          singleQuote: false,
+          printWidth: 120,
+          endOfLine: 'auto',
+        },
+      ],
+      '@typescript-eslint/no-unused-vars': 'warn', // Certain methods need to match but cannot
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+      'semi': ['error', 'never'], // Enforce no semicolons
+      '@typescript-eslint/no-explicit-any': 'off', // Ensure this rule is disabled last
     },
   },
   {
@@ -83,25 +100,6 @@ export default [
       'n8n-nodes-base/node-param-fixed-collection-type-unsorted-items': 'off',
       'n8n-nodes-base/node-execute-block-operation-missing-singular-pairing': 'off',
       'n8n-nodes-base/node-execute-block-operation-missing-plural-pairing': 'off',
-    },
-  },
-  eslintPluginPrettierRecommended,
-  {
-    rules: {
-      'prettier/prettier': [
-        'error',
-        {},
-        {
-          usePrettierrc: true,
-        },
-      ],
-      '@typescript-eslint/no-unused-vars': 'warn', // Certain methods need to match but cannot
-      '@typescript-eslint/explicit-function-return-type': 'off',
-      'simple-import-sort/imports': 'error',
-      'simple-import-sort/exports': 'error',
-      'semi': ['error', 'never'], // Add this line to enforce no semicolons
-      '@typescript-eslint/no-explicit-any': 'off', // Ensure this rule is disabled last
-
     },
   },
 ];

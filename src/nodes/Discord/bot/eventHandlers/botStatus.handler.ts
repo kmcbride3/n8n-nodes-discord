@@ -1,15 +1,13 @@
 import { Client, PresenceStatusData } from "discord.js"
-import Ipc from "node-ipc"
 
 import { addLog } from "../helpers"
 import state from "../state"
 
-export default async function (ipc: typeof Ipc, client: Client) {
-  ipc.server.on(
+export default function botStatusHandler(client: Client) {
+  client.on(
     "bot:status",
-    async (data: { botActivity: string; botActivityType: number; botStatus: PresenceStatusData }, socket: any) => {
+    async (data: { botActivity: string; botActivityType: number; botStatus: PresenceStatusData }) => {
       try {
-        ipc.server.emit(socket, "bot:status", true)
         if (state.ready) {
           client.user?.setPresence({
             activities: [{ name: data.botActivity, type: data.botActivityType }],

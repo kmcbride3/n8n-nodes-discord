@@ -1,12 +1,11 @@
 import { AttachmentBuilder, Channel, Client, ColorResolvable, EmbedBuilder, Message, TextChannel } from "discord.js"
-import Ipc from "node-ipc"
 
 import { IDiscordNodeMessageParameters } from "../../Discord.node"
 import { addLog } from "../helpers"
 import state from "../state"
 
-export default async function (ipc: typeof Ipc, client: Client) {
-  ipc.server.on("send:message", async (nodeParameters: IDiscordNodeMessageParameters, socket: any) => {
+export default function sendMessageHandler(client: Client) {
+  client.on("send:message", async (nodeParameters: IDiscordNodeMessageParameters) => {
     try {
       if (state.ready) {
         const executionMatching = state.executionMatching[nodeParameters.executionId]
@@ -19,7 +18,7 @@ export default async function (ipc: typeof Ipc, client: Client) {
           .then(async (channel: Channel | null) => {
             if (!channel || !channel.isTextBased()) return
 
-            const embedFiles = []
+            const embedFiles: AttachmentBuilder[] = []
 
             addLog(`send:message to ${channelId}`, client)
 
@@ -38,7 +37,6 @@ export default async function (ipc: typeof Ipc, client: Client) {
                   const reg = new RegExp(/data:image\/([a-z]+);base64/gi)
                   const mime = reg.exec(nodeParameters.footerIconUrl) ?? []
                   const file = new AttachmentBuilder(buffer, { name: `footer.${mime[1]}` })
-                  // @ts-expect-error legacy declaration
                   embedFiles.push(file)
                   iconURL = `attachment://footer.${mime[1]}`
                 }
@@ -53,7 +51,6 @@ export default async function (ipc: typeof Ipc, client: Client) {
                   const reg = new RegExp(/data:image\/([a-z]+);base64/gi)
                   const mime = reg.exec(nodeParameters.imageUrl) ?? []
                   const file = new AttachmentBuilder(buffer, { name: `image.${mime[1]}` })
-                  // @ts-expect-error legacy declaration
                   embedFiles.push(file)
                   embed.setImage(`attachment://image.${mime[1]}`)
                 } else embed.setImage(nodeParameters.imageUrl)
@@ -64,7 +61,6 @@ export default async function (ipc: typeof Ipc, client: Client) {
                   const reg = new RegExp(/data:image\/([a-z]+);base64/gi)
                   const mime = reg.exec(nodeParameters.thumbnailUrl) ?? []
                   const file = new AttachmentBuilder(buffer, { name: `thumbnail.${mime[1]}` })
-                  // @ts-expect-error legacy declaration
                   embedFiles.push(file)
                   embed.setThumbnail(`attachment://thumbnail.${mime[1]}`)
                 } else embed.setThumbnail(nodeParameters.thumbnailUrl)
@@ -76,7 +72,6 @@ export default async function (ipc: typeof Ipc, client: Client) {
                   const reg = new RegExp(/data:image\/([a-z]+);base64/gi)
                   const mime = reg.exec(nodeParameters.authorIconUrl) ?? []
                   const file = new AttachmentBuilder(buffer, { name: `author.${mime[1]}` })
-                  // @ts-expect-error legacy declaration
                   embedFiles.push(file)
                   iconURL = `attachment://author.${mime[1]}`
                 }
@@ -108,7 +103,6 @@ export default async function (ipc: typeof Ipc, client: Client) {
             if (nodeParameters.content) content += nodeParameters.content
             if (mentions) content += mentions
 
-            // embedFiles
             let files: any[] = []
             if (nodeParameters.files?.file) {
               files = nodeParameters.files?.file.map((file: { url: string }) => {
@@ -140,13 +134,8 @@ export default async function (ipc: typeof Ipc, client: Client) {
                       t++
                       setTimeout(() => retry(), 300)
                     } else {
-                      await message.edit(sendObject).catch((e: any) => {
-                        addLog(`${e}`, client)
-                      })
-                      ipc.server.emit(socket, "send:message", {
-                        channelId,
-                        messageId: message.id,
-                      })
+                      await message.edit(sendObject).catch((e: any) => addLog(`${e}`, client))
+                      client.emit("send:message", { channelId, messageId: message.id })
                     }
                   }
                   retry()
@@ -157,16 +146,16 @@ export default async function (ipc: typeof Ipc, client: Client) {
             const message = (await (channel as TextChannel).send(sendObject).catch((e: any) => {
               addLog(`${e}`, client)
             })) as Message
-            ipc.server.emit(socket, "send:message", { channelId, messageId: message.id })
+            client.emit("send:message", { channelId, messageId: message.id })
           })
           .catch((e: any) => {
             addLog(`${e}`, client)
-            ipc.server.emit(socket, "send:message", false)
+            client.emit("send:message", false)
           })
       }
     } catch (e) {
       addLog(`${e}`, client)
-      ipc.server.emit(socket, "send:message", false)
+      client.emit("send:message", false)
     }
   })
 }

@@ -1,5 +1,7 @@
+import { Client, GatewayIntentBits } from "discord.js"
 import {
   IExecuteFunctions,
+  ILoadOptionsFunctions,
   INodeExecutionData,
   INodePropertyOptions,
   INodeType,
@@ -13,12 +15,14 @@ import {
   getChannels as getChannelsHelper,
   getRoles as getRolesHelper,
   ICredentials,
-  ipcRequest,
+  triggerWorkflow,
 } from "./bot/helpers"
 import { options } from "./Discord.node.options"
 
 // we start the bot if we are in the main process
-if (!process.send) bot()
+if (!process.send) {
+  bot()
+}
 
 const nodeDescription: INodeTypeDescription = {
   displayName: "Discord Send",
@@ -124,11 +128,21 @@ export class Discord implements INodeType {
 
   methods = {
     loadOptions: {
-      async getChannels(): Promise<INodePropertyOptions[]> {
-        return await getChannelsHelper(this).catch((e) => e)
+      async getChannels(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const client = new Client({
+          intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+        })
+        const credentials = (await this.getCredentials("discordApi").catch((e) => e)) as any as ICredentials
+        await connection(credentials, client)
+        return await getChannelsHelper(client).catch((e) => e)
       },
-      async getRoles(): Promise<INodePropertyOptions[]> {
-        return await getRolesHelper(this).catch((e) => e)
+      async getRoles(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const client = new Client({
+          intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+        })
+        const credentials = (await this.getCredentials("discordApi").catch((e) => e)) as any as ICredentials
+        await connection(credentials, client)
+        return await getRolesHelper(client).catch((e) => e)
       },
     },
   }
@@ -139,7 +153,10 @@ export class Discord implements INodeType {
 
     // connection
     const credentials = (await this.getCredentials("discordApi").catch((e) => e)) as any as ICredentials
-    await connection(credentials).catch((e) => {
+    const client = new Client({
+      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+    })
+    await connection(credentials, client).catch((e) => {
       throw new Error(e)
     })
 
@@ -156,29 +173,34 @@ export class Discord implements INodeType {
 
       if (nodeParameters.channelId || nodeParameters.executionId) {
         // return the interaction result if there is one
-        const res = await ipcRequest(
-          `send:${
-            ["select", "button"].includes(nodeParameters.type)
-              ? "prompt"
-              : nodeParameters.type === "none"
-                ? "action"
-                : nodeParameters.type
-          }`,
-          nodeParameters,
+        const res = await triggerWorkflow(
+          nodeParameters.webhookId,
+          null,
+          nodeParameters.placeholderId,
+          nodeParameters.baseUrl,
+          undefined,
+          nodeParameters.channelId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
         ).catch((e) => {
           throw new Error(e)
         })
 
         returnData.push({
           json: {
-            value: res?.value,
-            channelId: res?.channelId,
-            userId: res?.userId,
-            userName: res?.userName,
-            userTag: res?.userTag,
-            messageId: res?.messageId,
-            action: res?.action,
-          }, // todo: add triggeringUser if executed following a discord trigger
+            value: res,
+            channelId: nodeParameters.channelId,
+            userId: nodeParameters.userId,
+            userName: nodeParameters.userName,
+            userTag: nodeParameters.userTag,
+            messageId: nodeParameters.messageId,
+            action: nodeParameters.action,
+          },
         })
       }
 

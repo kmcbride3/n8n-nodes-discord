@@ -4,8 +4,8 @@ import { uid } from "uid"
 import { addLog, placeholderLoading, triggerWorkflow } from "../helpers"
 import state from "../state"
 
-export default async function (client: Client) {
-  client.on("guildMemberAdd", (member) => {
+export default function (client: Client) {
+  client.on("guildMemberAdd", async (member) => {
     try {
       if (member.user.system) return
       Object.keys(state.channels).forEach((key) => {

@@ -4,7 +4,7 @@ import { uid } from "uid"
 import { addLog, placeholderLoading, triggerWorkflow } from "../helpers"
 import state from "../state"
 
-export default async function (client: Client) {
+export default function (client: Client) {
   client.on("presenceUpdate", (oldPresence, newPresence) => {
     const member = newPresence.member
     try {

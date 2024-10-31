@@ -10,14 +10,13 @@ import {
   SelectMenuComponentOptionData,
   TextChannel,
 } from "discord.js"
-import Ipc from "node-ipc"
 
 import { IDiscordNodePromptParameters } from "../../Discord.node"
 import { addLog, execution, placeholderLoading, pollingPromptData } from "../helpers"
 import state from "../state"
 
-export default async function (ipc: typeof Ipc, client: Client) {
-  ipc.server.on("send:prompt", async (nodeParameters: IDiscordNodePromptParameters, socket: any) => {
+export default function sendPromptHandler(client: Client) {
+  client.on("send:prompt", async (nodeParameters: IDiscordNodePromptParameters) => {
     try {
       if (state.ready) {
         const executionMatching = state.executionMatching[nodeParameters.executionId]
@@ -37,7 +36,7 @@ export default async function (ipc: typeof Ipc, client: Client) {
               await pollingPromptData(message, nodeParameters.content, nodeParameters.timeout, client).catch((e: any) =>
                 addLog(`${e}`, client),
               )
-              ipc.server.emit(socket, "send:prompt", state.promptData[message.id])
+              client.emit("send:prompt", state.promptData[message.id])
               delete state.promptData[message.id]
               if (nodeParameters.placeholder) {
                 const message = await (channel as TextChannel)
@@ -116,9 +115,7 @@ export default async function (ipc: typeof Ipc, client: Client) {
                       t++
                       setTimeout(() => retry(), 300)
                     } else {
-                      await message.edit(sendObject as MessageEditOptions).catch((e: any) => {
-                        addLog(`${e}`, client)
-                      })
+                      await message.edit(sendObject as MessageEditOptions).catch((e: any) => addLog(`${e}`, client))
                       promptProcessing(message)
                     }
                   }
@@ -149,20 +146,17 @@ export default async function (ipc: typeof Ipc, client: Client) {
             if (message && message.id && !nodeParameters.persistent) {
               promptProcessing(message)
             } else if (message && message.id && nodeParameters.persistent) {
-              ipc.server.emit(socket, "send:prompt", {
-                channelId: channel.id,
-                messageId: message.id,
-              })
+              client.emit("send:prompt", { channelId: channel.id, messageId: message.id })
             }
           })
           .catch((e: any) => {
             addLog(`${e}`, client)
-            ipc.server.emit(socket, "send:prompt", false)
+            client.emit("send:prompt", false)
           })
       }
     } catch (e) {
       addLog(`${e}`, client)
-      ipc.server.emit(socket, "send:prompt", false)
+      client.emit("send:prompt", false)
     }
   })
 }

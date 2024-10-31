@@ -1,12 +1,11 @@
 import { Channel, Client, GuildMember, TextChannel, User } from "discord.js"
-import Ipc from "node-ipc"
 
 import { IDiscordNodeActionParameters } from "../../Discord.node"
 import { addLog } from "../helpers"
 import state from "../state"
 
-export default async function (ipc: typeof Ipc, client: Client) {
-  ipc.server.on("send:action", async (nodeParameters: IDiscordNodeActionParameters, socket: any) => {
+export default function sendActionHandler(client: Client) {
+  client.on("send:action", async (nodeParameters: IDiscordNodeActionParameters) => {
     try {
       if (state.ready) {
         const executionMatching = state.executionMatching[nodeParameters.executionId]
@@ -15,7 +14,7 @@ export default async function (ipc: typeof Ipc, client: Client) {
         else channelId = nodeParameters.channelId
 
         if (!channelId && !nodeParameters.actionType) {
-          ipc.server.emit(socket, "send:action", false)
+          client.emit("send:action", false)
           return
         }
 
@@ -49,9 +48,7 @@ export default async function (ipc: typeof Ipc, client: Client) {
                       })
                       .catch((e: any) => addLog(`${e}`, client))
                   })
-                  .catch((e: any) => {
-                    addLog(`${e}`, client)
-                  })
+                  .catch((e: any) => addLog(`${e}`, client))
               }
             }
 
@@ -63,22 +60,15 @@ export default async function (ipc: typeof Ipc, client: Client) {
                 })) as any
                 delete state.placeholderMatching[executionMatching.placeholderId]
                 if (message && message.delete) {
-                  // delete message
                   let t = 0
                   const retry = async () => {
                     if (state.placeholderWaiting[executionMatching.placeholderId] && t < 10) {
                       t++
                       setTimeout(() => retry(), 300)
                     } else {
-                      await message.delete().catch((e: any) => {
-                        addLog(`${e}`, client)
-                      })
-
+                      await message.delete().catch((e: any) => addLog(`${e}`, client))
                       await performAction()
-                      ipc.server.emit(socket, "send:action", {
-                        channelId,
-                        action: nodeParameters.actionType,
-                      })
+                      client.emit("send:action", { channelId, action: nodeParameters.actionType })
                     }
                   }
                   retry()
@@ -88,19 +78,16 @@ export default async function (ipc: typeof Ipc, client: Client) {
             }
 
             await performAction()
-            ipc.server.emit(socket, "send:action", {
-              channelId,
-              action: nodeParameters.actionType,
-            })
+            client.emit("send:action", { channelId, action: nodeParameters.actionType })
           })
           .catch((e: any) => {
             addLog(`${e}`, client)
-            ipc.server.emit(socket, "send:action", false)
+            client.emit("send:action", false)
           })
       }
     } catch (e) {
       addLog(`${e}`, client)
-      ipc.server.emit(socket, "send:action", false)
+      client.emit("send:action", false)
     }
   })
 }

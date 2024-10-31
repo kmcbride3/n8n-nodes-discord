@@ -4,8 +4,8 @@ import { uid } from "uid"
 import { addLog, placeholderLoading, triggerWorkflow } from "../helpers"
 import state from "../state"
 
-export default async function (client: Client) {
-  client.on("guildMemberRemove", (member) => {
+export default function (client: Client) {
+  client.on("guildMemberRemove", async (member) => {
     try {
       if (member.user.system) return
       const userRoles = member.roles.cache.map((role) => role.id)
