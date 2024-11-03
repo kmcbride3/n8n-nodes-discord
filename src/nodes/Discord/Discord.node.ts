@@ -5,36 +5,36 @@ import {
   INodeType,
   INodeTypeDescription,
   NodeConnectionType,
-} from "n8n-workflow"
+} from 'n8n-workflow'
 
-import bot from "./bot"
+import bot from './bot'
 import {
   connection,
   getChannels as getChannelsHelper,
   getRoles as getRolesHelper,
   ICredentials,
   ipcRequest,
-} from "./bot/helpers"
-import { options } from "./Discord.node.options"
+} from './bot/helpers'
+import { options } from './Discord.node.options'
 
 // we start the bot if we are in the main process
 if (!process.send) bot()
 
 const nodeDescription: INodeTypeDescription = {
-  displayName: "Discord Send",
-  name: "discord",
-  group: ["discord"],
+  displayName: 'Discord Send',
+  name: 'discord',
+  group: ['discord'],
   version: 1,
-  description: "Sends messages, embeds and prompts to Discord",
+  description: 'Sends messages, embeds and prompts to Discord',
   defaults: {
-    name: "Discord Send",
+    name: 'Discord Send',
   },
-  icon: "file:discord.svg",
+  icon: 'file:discord.svg',
   inputs: [NodeConnectionType.Main],
   outputs: [NodeConnectionType.Main],
   credentials: [
     {
-      name: "discordApi",
+      name: 'discordApi',
       required: true,
     },
   ],
@@ -138,7 +138,7 @@ export class Discord implements INodeType {
     const returnData: INodeExecutionData[] = []
 
     // connection
-    const credentials = (await this.getCredentials("discordApi").catch((e) => e)) as any as ICredentials
+    const credentials = (await this.getCredentials('discordApi').catch((e) => e)) as any as ICredentials
     await connection(credentials).catch((e) => {
       throw new Error(e)
     })
@@ -148,7 +148,7 @@ export class Discord implements INodeType {
     for (let itemIndex: number = 0; itemIndex < items.length; itemIndex++) {
       const nodeParameters: any = {}
       Object.keys(this.getNode().parameters).forEach((key) => {
-        nodeParameters[key] = this.getNodeParameter(key, itemIndex, "") as any
+        nodeParameters[key] = this.getNodeParameter(key, itemIndex, '') as any
       })
       nodeParameters.executionId = executionId
       nodeParameters.apiKey = credentials.apiKey
@@ -158,10 +158,10 @@ export class Discord implements INodeType {
         // return the interaction result if there is one
         const res = await ipcRequest(
           `send:${
-            ["select", "button"].includes(nodeParameters.type)
-              ? "prompt"
-              : nodeParameters.type === "none"
-                ? "action"
+            ['select', 'button'].includes(nodeParameters.type)
+              ? 'prompt'
+              : nodeParameters.type === 'none'
+                ? 'action'
                 : nodeParameters.type
           }`,
           nodeParameters,

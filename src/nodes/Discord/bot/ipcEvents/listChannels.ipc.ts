@@ -1,31 +1,30 @@
-import { ChannelType, Client, GuildBasedChannel } from "discord.js"
-import Ipc from "node-ipc"
+import { GuildBasedChannel } from 'discord.js'
 
-import { addLog } from "../helpers"
-import state from "../state"
+import { addLog } from '../helpers'
+import state from '../state'
 
-export default async function (ipc: typeof Ipc, client: Client) {
-  ipc.server.on("list:channels", (data: undefined, socket: any) => {
-    try {
-      if (state.ready) {
-        const guild = client.guilds.cache.first()
-        const channels =
-          guild?.channels.cache.filter(
-            (c) => c.type === ChannelType.GuildText || c.type === ChannelType.GuildAnnouncement,
-          ) ?? ([] as any)
-
-        const channelsList = channels.map((channel: GuildBasedChannel) => {
-          return {
-            name: channel?.name,
-            value: channel.id,
+export default async function (process: NodeJS.Process) {
+  process.on('message', (message: { type: string }) => {
+    if (message.type === 'list:channels') {
+      try {
+        if (state.ready) {
+          const channels = state.client.channels.cache
+            .filter((channel): channel is GuildBasedChannel => channel.isTextBased())
+            .map((channel) => ({
+              name: channel.name,
+              value: channel.id,
+            }))
+          if (process.send) {
+            process.send({ type: 'list:channels', data: channels })
           }
-        })
-
-        ipc.server.emit(socket, "list:channels", channelsList)
-        addLog(`list:channels`, client)
+        } else {
+          if (process.send) {
+            process.send({ type: 'list:channels', data: [] })
+          }
+        }
+      } catch (e) {
+        addLog(`${e}`, state.client)
       }
-    } catch (e) {
-      addLog(`${e}`, client)
     }
   })
 }

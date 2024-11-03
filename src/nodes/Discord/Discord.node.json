@@ -2,7 +2,7 @@
   "node": "@jordanburke/n8n-nodes-discord.discord",
   "nodeVersion": "1.0",
   "codexVersion": "1.0",
-  "categories": ["Messaging"],
+  "categories": ["Communication"],
   "resources": {
     "credentialDocumentation": [
       {

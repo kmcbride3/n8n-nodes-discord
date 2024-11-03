@@ -1,28 +1,30 @@
-import { Client, Role } from "discord.js"
-import Ipc from "node-ipc"
+import { addLog } from '../helpers'
+import state from '../state'
 
-import { addLog } from "../helpers"
-import state from "../state"
-
-export default async function (ipc: typeof Ipc, client: Client) {
-  ipc.server.on("list:roles", (data: undefined, socket: any) => {
-    try {
-      if (state.ready) {
-        const guild = client.guilds.cache.first()
-        const roles = guild?.roles.cache ?? ([] as any)
-
-        const rolesList = roles.map((role: Role) => {
-          return {
-            name: role.name,
-            value: role.id,
+export default async function (process: NodeJS.Process) {
+  process.on('message', (message: { type: string }) => {
+    if (message.type === 'list:roles') {
+      try {
+        if (state.ready) {
+          const roles = state.client.guilds.cache
+            .map((guild) =>
+              guild.roles.cache.map((role) => ({
+                name: role.name,
+                value: role.id,
+              })),
+            )
+            .flat()
+          if (process.send) {
+            process.send({ type: 'list:roles', data: roles })
           }
-        })
-
-        ipc.server.emit(socket, "list:roles", rolesList)
-        addLog(`list:roles`, client)
+        } else {
+          if (process.send) {
+            process.send({ type: 'list:roles', data: [] })
+          }
+        }
+      } catch (e) {
+        addLog(`${e}`, state.client)
       }
-    } catch (e) {
-      addLog(`${e}`, client)
     }
   })
 }

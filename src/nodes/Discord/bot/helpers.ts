@@ -1,9 +1,9 @@
-import axios from "axios"
-import { Client, Message, User } from "discord.js"
-import { INodePropertyOptions } from "n8n-workflow"
-import ipc from "node-ipc"
+import axios from 'axios'
+import { Client, GatewayIntentBits, Message, User } from 'discord.js'
+import { INodePropertyOptions } from 'n8n-workflow'
 
-import state from "./state"
+import credentialsIpc from './ipcEvents/credentials.ipc'
+import state from './state'
 
 export interface ICredentials {
   clientId: string
@@ -13,73 +13,74 @@ export interface ICredentials {
 }
 
 export const connection = (credentials: ICredentials): Promise<string> => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     if (!credentials || !credentials.token || !credentials.clientId) {
-      reject("credentials missing")
+      console.log('Connection failed: credentials missing')
+      reject('credentials missing')
       return
     }
 
-    const timeout = setTimeout(() => reject("timeout"), 15000)
+    const timeout = setTimeout(() => {
+      console.log('Connection failed: timeout')
+      reject('timeout')
+    }, 15000)
 
-    ipc.config.retry = 1500
-    ipc.connectTo("bot", () => {
-      ipc.of.bot.emit("credentials", credentials)
+    console.log('Sending credentials to bot process')
 
-      ipc.of.bot.on("credentials", (data: string) => {
-        clearTimeout(timeout)
-        if (data === "error") reject("Invalid credentials")
-        else if (data === "missing") reject("Token or clientId missing")
-        else if (data === "login") reject("Already logging in")
-        else if (data === "different") resolve("Already logging in with different credentials")
-        else resolve(data) // ready / already
-      })
-    })
+    try {
+      await credentialsIpc(credentials)
+      clearTimeout(timeout)
+      resolve('ready')
+    } catch (error) {
+      clearTimeout(timeout)
+      console.log('Connection failed:', error)
+      reject(error)
+    }
   })
 }
 
 export const getChannels = async (that: any): Promise<INodePropertyOptions[]> => {
-  const endMessage = " - Close and reopen this node modal once you have made changes."
+  const endMessage = ' - Close and reopen this node modal once you have made changes.'
 
-  console.log("credentials")
-  const credentials = await that.getCredentials("discordApi").catch((e: any) => e)
+  const credentials = await that.getCredentials('discordApi').catch((e: any) => e)
+  console.log('Retrieved credentials:', credentials)
   const res = await connection(credentials).catch((e) => e)
-  if (!["ready", "already"].includes(res)) {
+  if (!['ready', 'already'].includes(res)) {
     return [
       {
         name: res + endMessage,
-        value: "false",
+        value: 'false',
       },
     ]
   }
 
   const channelsRequest = () =>
     new Promise((resolve) => {
-      const timeout = setTimeout(() => resolve(""), 5000)
+      const timeout = setTimeout(() => resolve(''), 5000)
 
-      ipc.config.retry = 1500
-      ipc.connectTo("bot", () => {
-        ipc.of.bot.emit("list:channels")
+      process.send?.({ type: 'list:channels' })
 
-        ipc.of.bot.on("list:channels", (data: { name: string; value: string }[]) => {
+      process.on('message', (message: { type: string; data: { name: string; value: string }[] }) => {
+        if (message.type === 'list:channels') {
           clearTimeout(timeout)
-          resolve(data)
-        })
+          resolve(message.data)
+        }
       })
     })
 
   const channels = await channelsRequest().catch((e) => e)
 
-  let message = "Unexpected error"
+  let message = 'Unexpected error'
 
   if (channels) {
     if (Array.isArray(channels) && channels.length) return channels
-    else message = "Your Discord server has no text channels, please add at least one text channel" + endMessage
+    else message = 'Your Discord server has no text channels, please add at least one text channel' + endMessage
   }
 
   return [
     {
       name: message,
-      value: "false",
+      value: 'false',
     },
   ]
 }
@@ -90,53 +91,53 @@ export interface IRole {
 }
 
 export const getRoles = async (that: any): Promise<INodePropertyOptions[]> => {
-  const endMessage = " - Close and reopen this node modal once you have made changes."
+  const endMessage = ' - Close and reopen this node modal once you have made changes.'
 
-  const credentials = await that.getCredentials("discordApi").catch((e: any) => e)
+  const credentials = await that.getCredentials('discordApi').catch((e: any) => e)
+  console.log('Retrieved credentials:', credentials) // Add this line
   const res = await connection(credentials).catch((e) => e)
-  if (!["ready", "already"].includes(res)) {
+  if (!['ready', 'already'].includes(res)) {
     return [
       {
         name: res + endMessage,
-        value: "false",
+        value: 'false',
       },
     ]
   }
 
   const rolesRequest = () =>
     new Promise((resolve) => {
-      const timeout = setTimeout(() => resolve(""), 5000)
+      const timeout = setTimeout(() => resolve(''), 5000)
 
-      ipc.config.retry = 1500
-      ipc.connectTo("bot", () => {
-        ipc.of.bot.emit("list:roles")
+      process.send?.({ type: 'list:roles' })
 
-        ipc.of.bot.on("list:roles", (data: any) => {
+      process.on('message', (message: { type: string; data: any }) => {
+        if (message.type === 'list:roles') {
           clearTimeout(timeout)
-          resolve(data)
-        })
+          resolve(message.data)
+        }
       })
     })
 
   const roles = await rolesRequest().catch((e) => e)
 
-  let message = "Unexpected error"
+  let message = 'Unexpected error'
 
   if (roles) {
     if (Array.isArray(roles)) {
-      const filtered = roles.filter((r: any) => r.name !== "@everyone")
+      const filtered = roles.filter((r: any) => r.name !== '@everyone')
       if (filtered.length) return filtered
       else
         message =
-          "Your Discord server has no roles, please add at least one if you want to restrict the trigger to specific users" +
+          'Your Discord server has no roles, please add at least one if you want to restrict the trigger to specific users' +
           endMessage
-    } else message = "Something went wrong" + endMessage
+    } else message = 'Something went wrong' + endMessage
   }
 
   return [
     {
       name: message,
-      value: "false",
+      value: 'false',
     },
   ]
 }
@@ -157,12 +158,12 @@ export const triggerWorkflow = async (
   userRoles?: string[],
 ): Promise<boolean> => {
   const headers = {
-    accept: "application/json",
+    accept: 'application/json',
   }
 
   const res = await axios
     .post(
-      `${baseUrl}/webhook${state.testMode ? "-test" : ""}/${webhookId}/webhook`,
+      `${baseUrl}/webhook${state.testMode ? '-test' : ''}/${webhookId}/webhook`,
       {
         content: message?.content,
         channelId: message?.channelId ?? channelId,
@@ -186,8 +187,9 @@ export const triggerWorkflow = async (
       console.log(e)
       if (state.triggers[webhookId] && !state.testMode) {
         state.triggers[webhookId].active = false
-        ipc.connectTo("bot", () => {
-          ipc.of.bot.emit("trigger", { ...state.triggers[webhookId], baseUrl: state.baseUrl })
+        process.send?.({
+          type: 'trigger',
+          data: { ...state.triggers[webhookId], baseUrl: state.baseUrl },
         })
       }
     })
@@ -204,20 +206,19 @@ export const addLog = (message: string, client: Client) => {
 
   if (state.ready && state.autoLogs) {
     const channel = client.channels.cache.get(state.autoLogsChannelId) as any
-    if (channel) channel.send("**" + log + "**")
+    if (channel) channel.send('**' + log + '**')
   }
 }
 
 export const ipcRequest = (type: string, parameters: any): Promise<any> => {
   return new Promise((resolve) => {
-    ipc.config.retry = 1500
-    ipc.connectTo("bot", () => {
-      ipc.of.bot.emit(type, parameters)
-      if (parameters.botCustomization && parameters.botActivity) ipc.of.bot.emit("bot:status", parameters)
+    process.send?.({ type, data: parameters })
+    if (parameters.botCustomization && parameters.botActivity) process.send?.({ type: 'bot:status', data: parameters })
 
-      ipc.of.bot.on(type, (data: any) => {
-        resolve(data)
-      })
+    process.on('message', (message: { type: string; data: any }) => {
+      if (message.type === type) {
+        resolve(message.data)
+      }
     })
   })
 }
@@ -230,7 +231,7 @@ export const pollingPromptData = (message: any, content: string, seconds: number
         if (!state.promptData[message.id]?.value) {
           await message.edit({ content: content, components: [] }).catch((e: any) => e)
           const channel = client.channels.cache.get(message.channelId) as any
-          if (channel) await channel.send("Timeout reached").catch((e: any) => e)
+          if (channel) await channel.send('Timeout reached').catch((e: any) => e)
         }
         resolve(true)
         return
@@ -262,20 +263,23 @@ export const execution = async (
   userId?: string,
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject("timeout"), 15000)
-    ipc.connectTo("bot", () => {
-      ipc.of.bot.emit("execution", {
+    const timeout = setTimeout(() => reject('timeout'), 15000)
+    process.send?.({
+      type: 'execution',
+      data: {
         executionId,
         placeholderId,
         channelId,
         apiKey,
         baseUrl,
         userId,
-      })
-      ipc.of.bot.on("execution", () => {
+      },
+    })
+    process.on('message', (message: { type: string }) => {
+      if (message.type === 'execution') {
         clearTimeout(timeout)
         resolve(true)
-      })
+      }
     })
   })
 }
@@ -287,8 +291,8 @@ export const placeholderLoading = async (placeholder: Message, placeholderMatchi
   const waiting = async () => {
     i++
     if (i > 3) i = 0
-    let content = txt + ""
-    for (let j = 0; j < i; j++) content += "."
+    let content = txt + ''
+    for (let j = 0; j < i; j++) content += '.'
 
     if (!state.placeholderMatching[placeholderMatchingId]) {
       await placeholder.edit(txt).catch((e: any) => e)
@@ -310,4 +314,22 @@ export const placeholderLoading = async (placeholder: Message, placeholderMatchi
 export function withTimeout<T>(promise: Promise<T>, ms: number) {
   const timeout = new Promise((resolve, reject) => setTimeout(() => reject(`Timed out after ${ms} ms.`), ms))
   return Promise.race([promise, timeout])
+}
+
+export function createClient() {
+  return new Client({
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+      GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.GuildPresences,
+      GatewayIntentBits.GuildBans,
+      GatewayIntentBits.GuildMessageReactions,
+      GatewayIntentBits.GuildMessageTyping,
+    ],
+    allowedMentions: {
+      parse: ['roles', 'users', 'everyone'],
+    },
+  })
 }

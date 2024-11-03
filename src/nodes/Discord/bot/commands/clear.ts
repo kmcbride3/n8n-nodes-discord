@@ -1,7 +1,7 @@
-import { SlashCommandBuilder, SlashCommandIntegerOption } from "@discordjs/builders"
-import { Interaction, TextChannel } from "discord.js"
+import { SlashCommandBuilder, SlashCommandIntegerOption } from '@discordjs/builders'
+import { Interaction, TextChannel } from 'discord.js'
 
-const name = "clear"
+const name = 'clear'
 
 export default {
   params: {
@@ -11,10 +11,10 @@ export default {
   registerCommand: () => {
     return new SlashCommandBuilder()
       .setName(name)
-      .setDescription("Delete messages")
+      .setDescription('Delete messages')
       .setDMPermission(false)
       .addIntegerOption((option: SlashCommandIntegerOption) =>
-        option.setName("input").setDescription("Number of last messages to delete").setRequired(false),
+        option.setName('input').setDescription('Number of last messages to delete').setRequired(false),
       )
   },
 
@@ -22,6 +22,6 @@ export default {
     const channel = interaction.channel
     const nb = param > 0 && param <= 100 ? param : 100
     await (channel as TextChannel).bulkDelete(nb).catch((e: any) => console.log(e))
-    return "Done!"
+    return 'Done!'
   },
 }

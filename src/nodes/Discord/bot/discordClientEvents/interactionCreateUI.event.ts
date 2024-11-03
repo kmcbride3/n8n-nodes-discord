@@ -1,11 +1,11 @@
-import { Client, ComponentType, GuildMemberRoleManager, TextChannel } from "discord.js"
-import { uid } from "uid"
+import { Client, ComponentType, GuildMemberRoleManager, TextChannel } from 'discord.js'
+import { uid } from 'uid'
 
-import { addLog, placeholderLoading, triggerWorkflow } from "../helpers"
-import state from "../state"
+import { addLog, placeholderLoading, triggerWorkflow } from '../helpers'
+import state from '../state'
 
 export default async function (client: Client) {
-  client.on("interactionCreate", (interaction) => {
+  client.on('interactionCreate', (interaction) => {
     try {
       if (!interaction.isButton() && !interaction.isSelectMenu()) return
 
@@ -14,17 +14,20 @@ export default async function (client: Client) {
       Object.keys(state.channels).forEach((key) => {
         const channel = state.channels[key]
         channel.forEach(async (trigger) => {
-          if (trigger.type === "interaction" && trigger.interactionMessageId === interaction.message.id) {
+          if (trigger.type === 'interaction' && trigger.interactionMessageId === interaction.message.id) {
             if (trigger.roleIds.length) {
               const hasRole = trigger.roleIds.some((role: string) => userRoles?.includes(role))
               if (!hasRole) {
-                interaction.reply({ content: `You are not allowed to do this`, ephemeral: true })
+                interaction.reply({
+                  content: `You are not allowed to do this`,
+                  ephemeral: true,
+                })
                 return
               }
             }
 
             addLog(`triggerWorkflow ${trigger.webhookId}`, client)
-            const placeholderMatchingId = trigger.placeholder ? uid() : ""
+            const placeholderMatchingId = trigger.placeholder ? uid() : ''
             const interactionValues = interaction.isButton() ? [interaction.customId] : interaction.values
             const isEnabled = await triggerWorkflow(
               trigger.webhookId,
@@ -81,13 +84,19 @@ export default async function (client: Client) {
       if (promptData.restrictToRoles) {
         const hasRole = promptData.mentionRoles.some((role: string) => userRoles?.includes(role))
         if (!hasRole) {
-          interaction.reply({ content: `You are not allowed to do this`, ephemeral: true })
+          interaction.reply({
+            content: `You are not allowed to do this`,
+            ephemeral: true,
+          })
           return
         }
       }
       const triggeringUserId = state.executionMatching[promptData.executionId]?.userId
       if (promptData.restrictToTriggeringUser && triggeringUserId && interaction.user.id !== triggeringUserId) {
-        interaction.reply({ content: `You are not allowed to do this`, ephemeral: true })
+        interaction.reply({
+          content: `You are not allowed to do this`,
+          ephemeral: true,
+        })
         return
       }
 

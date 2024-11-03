@@ -1,3 +1,7 @@
+import { Client } from 'discord.js'
+
+import { createClient } from './helpers'
+
 const state: {
   ready: boolean
   login: boolean
@@ -5,6 +9,7 @@ const state: {
   clientId: string
   token: string
   baseUrl: string
+  client: Client
   triggers: {
     [key: string]: {
       webhookId: string
@@ -70,14 +75,15 @@ const state: {
   ready: false,
   login: false,
   testMode: false,
-  clientId: "",
-  token: "",
-  baseUrl: "",
+  clientId: '',
+  token: '',
+  baseUrl: '',
+  client: createClient(),
   triggers: {},
   channels: {},
   logs: [],
   autoLogs: false,
-  autoLogsChannelId: "",
+  autoLogsChannelId: '',
   placeholderMatching: {},
   placeholderWaiting: {},
   executionMatching: {},

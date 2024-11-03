@@ -1,38 +1,48 @@
-import { Client, GuildMemberRoleManager, TextChannel } from "discord.js"
-import { uid } from "uid"
+import { Client, GuildMemberRoleManager, TextChannel } from 'discord.js'
+import { uid } from 'uid'
 
-import { addLog, placeholderLoading, triggerWorkflow } from "../helpers"
-import state from "../state"
+import { addLog, placeholderLoading, triggerWorkflow } from '../helpers'
+import state from '../state'
 
 export default async function (client: Client) {
-  client.on("interactionCreate", (interaction) => {
+  client.on('interactionCreate', (interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return
       if (!interaction.guildId) {
-        interaction.reply({ content: "Commands work only inside channels" })
+        interaction.reply({ content: 'Commands work only inside channels' })
         return
       }
 
       const userRoles = (interaction.member?.roles as GuildMemberRoleManager).cache.map((role) => role.id)
 
-      const input = interaction.options.getString("input")
+      const input = interaction.options.getString('input')
 
       if (state.channels[interaction.channelId] || state.channels.all) {
         ;[...(state.channels[interaction.channelId] ?? []), ...(state.channels.all ?? [])].forEach(async (trigger) => {
-          if (trigger.type === "command") {
+          if (trigger.type === 'command') {
             if (trigger.roleIds.length) {
               const hasRole = trigger.roleIds.some((role) => userRoles?.includes(role))
               if (!hasRole) {
-                interaction.reply({ content: "You do not have permission", ephemeral: true }).catch((e) => e)
+                interaction
+                  .reply({
+                    content: 'You do not have permission',
+                    ephemeral: true,
+                  })
+                  .catch((e) => e)
 
                 return
               }
             }
             if (trigger.name === interaction.commandName) {
               addLog(`triggerWorkflow ${trigger.webhookId}`, client)
-              const placeholderMatchingId = trigger.placeholder ? uid() : ""
+              const placeholderMatchingId = trigger.placeholder ? uid() : ''
 
-              interaction.reply({ content: `/${interaction.commandName} sent`, ephemeral: true }).catch((e) => e)
+              interaction
+                .reply({
+                  content: `/${interaction.commandName} sent`,
+                  ephemeral: true,
+                })
+                .catch((e) => e)
 
               const isEnabled = await triggerWorkflow(
                 trigger.webhookId,

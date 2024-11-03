@@ -5,6 +5,7 @@
     "moduleResolution": "node",
     "target": "es2019",
     "lib": ["es2019", "es2020", "es2022.error"],
+    "types": ["node"],
     "removeComments": true,
     "useUnknownInCatchVariables": false,
     "forceConsistentCasingInFileNames": true,
@@ -19,9 +20,8 @@
     "declaration": true,
     "sourceMap": true,
     "skipLibCheck": true,
-    "rootDir": "src",
+    "rootDir": "./src/",
     "outDir": "./dist/"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/credentials**/*", "src/nodes/**/*", "src/nodes/**/*.json", "package.json"]
 }

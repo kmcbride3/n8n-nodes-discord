@@ -1,11 +1,16 @@
-const { src, dest } = require('gulp');
+const path = require('path');
+const { task, src, dest } = require('gulp');
+
+task('build:icons', copyIcons);
 
 function copyIcons() {
-	src('src/nodes/Discord/**/*.{png,svg}')
-		.pipe(dest('dist/nodes/Discord'))
+	const nodeSource = path.resolve('src/nodes', '**', '*.{png,svg}');
+	const nodeDestination = path.resolve('dist', 'nodes');
 
-	return src('src/nodes/Discord/**/*.{png,svg}')
-		.pipe(dest('dist/credentials'));
+	src(nodeSource).pipe(dest(nodeDestination));
+
+	const credSource = path.resolve('src/credentials', '**', '*.{png,svg}');
+	const credDestination = path.resolve('dist', 'credentials');
+
+	return src(credSource).pipe(dest(credDestination));
 }
-
-exports.default = copyIcons;

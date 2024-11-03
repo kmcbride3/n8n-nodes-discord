@@ -1,8 +1,8 @@
-import { SlashCommandBooleanOption, SlashCommandBuilder } from "@discordjs/builders"
+import { SlashCommandBooleanOption, SlashCommandBuilder } from '@discordjs/builders'
 
-import state from "../state"
+import state from '../state'
 
-const name = "test"
+const name = 'test'
 
 export default {
   params: {
@@ -12,16 +12,16 @@ export default {
   registerCommand: () => {
     return new SlashCommandBuilder()
       .setName(name)
-      .setDescription("Toggle test mode")
+      .setDescription('Toggle test mode')
       .setDMPermission(false)
       .addBooleanOption((option: SlashCommandBooleanOption) =>
-        option.setName("input").setDescription("Specify if test mode is enabled or not").setRequired(false),
+        option.setName('input').setDescription('Specify if test mode is enabled or not').setRequired(false),
       )
   },
 
   executeCommand: async (param: boolean | undefined): Promise<string> => {
     if (param === undefined) state.testMode = !state.testMode
     else state.testMode = param
-    return "Test mode: " + state.testMode
+    return 'Test mode: ' + state.testMode
   },
 }

@@ -1,6 +1,6 @@
 {
-  "name": "@kmcbride3/n8n-nodes-discord",
-  "version": "0.6",
+  "name": "@jordanburke/n8n-nodes-discord",
+  "version": "0.5.9",
   "description": "nodes to trigger workflows from Discord or send interactive messages. Uses the components API which allows to create dialogs (e.g. attach buttons and wait for the user to click on them)",
   "keywords": [
     "n8n",
@@ -22,11 +22,11 @@
   },
   "main": "index.js",
   "scripts": {
-    "build": "tsc && gulp",
+    "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
-    "lint:fix": "eslint ./src -c eslint.config.mjs --quiet --fix",
-    "lint:format": "prettier  --log-level warn --write \"./**/*.{ts,tsx,css,md,json}\" ",
-    "lint": "pnpm lint:format && pnpm lint:fix ",
+    "lint:fix": "eslint src/nodes src/credentials --fix",
+    "lint:format": "prettier src/nodes src/credentials --write",
+    "lint": "pnpm lint:format && pnpm lint:fix",
     "publish": "pnpm build && pnpm publish --access public"
   },
   "files": [
@@ -42,36 +42,42 @@
       "dist/nodes/Discord/DiscordTrigger.node.js"
     ]
   },
+  "pnpm": {
+    "overrides": {
+      "eslint": "^9.13.0",
+      "@typescript-eslint/utils": "^8.12.2"
+    },
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "eslint": "^9.13.0",
+        "@typescript-eslint/utils": "^8.12.2"
+      }
+    }
+  },
   "devDependencies": {
+    "@eslint/compat": "^1.2.2",
     "@eslint/eslintrc": "^3.1.0",
-    "@eslint/js": "^9.13.0",
-    "@types/express": "^5.0.0",
-    "@types/request-promise-native": "~1.0.21",
-    "@typescript-eslint/eslint-plugin": "^8.11.0",
-    "@typescript-eslint/parser": "^8.11.0",
+    "@types/node": "^22.8.4",
+    "@typescript-eslint/eslint-plugin": "^8.12.2",
+    "@typescript-eslint/parser": "^8.12.2",
     "eslint": "^9.13.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-n8n-nodes-base": "^1.16.3",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-simple-import-sort": "^12.1.1",
-    "globals": "^15.11.0",
     "gulp": "^5.0.0",
-    "n8n-core": "^1.63.4",
-    "n8n-workflow": "^1.63.0",
+    "n8n-core": "^1.65.0",
+    "n8n-workflow": "^1.64.0",
     "prettier": "^3.3.3",
     "typescript": "^5.6.3"
   },
   "dependencies": {
     "@discordjs/builders": "^1.9.0",
     "@discordjs/rest": "^2.4.0",
-    "@eslint/compat": "^1.2.1",
-    "@types/node-ipc": "^9.2.3",
     "axios": "^1.7.7",
     "discord-api-types": "^0.37.103",
     "discord.js": "^14.16.3",
-    "node-ipc": "^12.0.0",
-    "prettier-eslint": "^16.3.0",
     "uid": "^2.0.2"
   },
   "packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228"

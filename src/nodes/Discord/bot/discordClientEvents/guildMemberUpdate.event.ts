@@ -1,11 +1,11 @@
-import { Client, TextChannel } from "discord.js"
-import { uid } from "uid"
+import { Client, TextChannel } from 'discord.js'
+import { uid } from 'uid'
 
-import { addLog, placeholderLoading, triggerWorkflow } from "../helpers"
-import state from "../state"
+import { addLog, placeholderLoading, triggerWorkflow } from '../helpers'
+import state from '../state'
 
 export default async function (client: Client) {
-  client.on("guildMemberUpdate", (oldMember, member) => {
+  client.on('guildMemberUpdate', (oldMember, member) => {
     try {
       if (!member || member.user.system) return
       const previousUserRoles = oldMember.roles.cache.map((role) => role.id)
@@ -13,8 +13,8 @@ export default async function (client: Client) {
       const addedRoles = currentUserRoles.filter((role) => !previousUserRoles.includes(role))
       const removedRoles = previousUserRoles.filter((role) => !currentUserRoles.includes(role))
 
-      const previousNick = oldMember?.nickname || ""
-      const currentNick = member?.nickname || ""
+      const previousNick = oldMember?.nickname || ''
+      const currentNick = member?.nickname || ''
       const nickChanged = previousNick !== currentNick
 
       if (addedRoles.length || removedRoles.length) {
@@ -26,20 +26,20 @@ export default async function (client: Client) {
               if (!hasRole) return
             }
             if (
-              (addedRoles.length && trigger.type === "userRoleAdded") ||
-              (removedRoles.length && trigger.type === "userRoleRemoved")
+              (addedRoles.length && trigger.type === 'userRoleAdded') ||
+              (removedRoles.length && trigger.type === 'userRoleRemoved')
             ) {
-              if (trigger.type === "userRoleAdded" && trigger.roleUpdateIds.length) {
+              if (trigger.type === 'userRoleAdded' && trigger.roleUpdateIds.length) {
                 const hasRole = trigger.roleUpdateIds.some((role) => addedRoles?.includes(role))
                 if (!hasRole) return
               }
-              if (trigger.type === "userRoleRemoved" && trigger.roleUpdateIds.length) {
+              if (trigger.type === 'userRoleRemoved' && trigger.roleUpdateIds.length) {
                 const hasRole = trigger.roleUpdateIds.some((role) => removedRoles?.includes(role))
                 if (!hasRole) return
               }
 
               addLog(`triggerWorkflow ${trigger.webhookId}`, client)
-              const placeholderMatchingId = trigger.placeholder ? uid() : ""
+              const placeholderMatchingId = trigger.placeholder ? uid() : ''
               const isEnabled = await triggerWorkflow(
                 trigger.webhookId,
                 null,
@@ -68,9 +68,9 @@ export default async function (client: Client) {
         Object.keys(state.channels).forEach((key) => {
           const channel = state.channels[key]
           channel.forEach(async (trigger) => {
-            if (trigger.type === "userNickUpdated") {
+            if (trigger.type === 'userNickUpdated') {
               addLog(`triggerWorkflow ${trigger.webhookId}`, client)
-              const placeholderMatchingId = trigger.placeholder ? uid() : ""
+              const placeholderMatchingId = trigger.placeholder ? uid() : ''
               const isEnabled = await triggerWorkflow(
                 trigger.webhookId,
                 null,

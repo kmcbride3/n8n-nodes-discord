@@ -1,52 +1,55 @@
-import { Client } from "discord.js"
-import Ipc from "node-ipc"
+import { registerCommands } from '../commands'
+import { addLog, ICredentials, withTimeout } from '../helpers'
+import state from '../state'
 
-import commands from "../commands"
-import { addLog, ICredentials, withTimeout } from "../helpers"
-import state from "../state"
+let commandsRegistered = false
 
-export default async function (ipc: typeof Ipc, client: Client) {
-  ipc.server.on("credentials", (data: ICredentials, socket: any) => {
+export default async function credentialsIpc(credentials: ICredentials) {
+  console.log('credentialsIpc triggered with credentials:', credentials)
+  return new Promise<void>((resolve, reject) => {
     try {
-      addLog(`credentials state login ${state.login}, ready ${state.ready}`, client)
+      addLog(`credentials state login ${state.login}, ready ${state.ready}`, state.client)
       if (
         (!state.login && !state.ready) ||
-        (state.ready && (state.clientId !== data.clientId || state.token !== data.token))
+        (state.ready && (state.clientId !== credentials.clientId || state.token !== credentials.token))
       ) {
-        if (data.token && data.clientId) {
-          addLog(`credentials login authenticating`, client)
+        if (credentials.token && credentials.clientId) {
+          addLog(`credentials login authenticating`, state.client)
           state.login = true
-          commands(data.token, data.clientId, client).catch((e) => {
-            addLog(`${e}`, client)
-          })
-          withTimeout(client.login(data.token), 3000)
+          state.clientId = credentials.clientId
+          state.token = credentials.token
+          if (!commandsRegistered) {
+            registerCommands().catch((e) => {
+              addLog(`${e}`, state.client)
+            })
+            commandsRegistered = true
+          }
+          withTimeout(state.client.login(credentials.token), 3000)
             .then(() => {
               state.ready = true
               state.login = false
-              state.clientId = data.clientId
-              state.token = data.token
-              ipc.server.emit(socket, "credentials", "ready")
-              addLog(`credentials ready`, client)
+              addLog(`credentials ready`, state.client)
+              resolve()
             })
             .catch((e) => {
               state.login = false
-              ipc.server.emit(socket, "credentials", "error")
-              addLog(`credentials error`, client)
+              addLog(`credentials error`, state.client)
+              reject(e)
             })
         } else {
-          ipc.server.emit(socket, "credentials", "missing")
-          addLog(`credentials missing`, client)
+          addLog(`credentials missing`, state.client)
+          reject('credentials missing')
         }
       } else if (state.login) {
-        ipc.server.emit(socket, "credentials", "login")
-        addLog(`credentials login`, client)
+        addLog(`credentials login`, state.client)
+        reject('credentials login')
       } else {
-        ipc.server.emit(socket, "credentials", "already")
+        resolve()
       }
     } catch (e) {
       state.login = false
-      ipc.server.emit(socket, "credentials", "error")
-      addLog(`${e}`, client)
+      addLog(`${e}`, state.client!)
+      reject(e)
     }
   })
 }

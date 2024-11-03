@@ -1,19 +1,19 @@
-import { Client, TextChannel } from "discord.js"
-import { uid } from "uid"
+import { Client, TextChannel } from 'discord.js'
+import { uid } from 'uid'
 
-import { addLog, placeholderLoading, triggerWorkflow } from "../helpers"
-import state from "../state"
+import { addLog, placeholderLoading, triggerWorkflow } from '../helpers'
+import state from '../state'
 
 export default async function (client: Client) {
-  client.on("guildMemberAdd", (member) => {
+  client.on('guildMemberAdd', (member) => {
     try {
       if (member.user.system) return
       Object.keys(state.channels).forEach((key) => {
         const channel = state.channels[key]
         channel.forEach(async (trigger) => {
-          if (trigger.type === "userJoins") {
+          if (trigger.type === 'userJoins') {
             addLog(`triggerWorkflow ${trigger.webhookId}`, client)
-            const placeholderMatchingId = trigger.placeholder ? uid() : ""
+            const placeholderMatchingId = trigger.placeholder ? uid() : ''
             const isEnabled = await triggerWorkflow(
               trigger.webhookId,
               null,

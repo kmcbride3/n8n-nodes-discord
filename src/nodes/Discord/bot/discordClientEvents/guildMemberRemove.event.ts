@@ -1,11 +1,11 @@
-import { Client, TextChannel } from "discord.js"
-import { uid } from "uid"
+import { Client, TextChannel } from 'discord.js'
+import { uid } from 'uid'
 
-import { addLog, placeholderLoading, triggerWorkflow } from "../helpers"
-import state from "../state"
+import { addLog, placeholderLoading, triggerWorkflow } from '../helpers'
+import state from '../state'
 
 export default async function (client: Client) {
-  client.on("guildMemberRemove", (member) => {
+  client.on('guildMemberRemove', (member) => {
     try {
       if (member.user.system) return
       const userRoles = member.roles.cache.map((role) => role.id)
@@ -16,9 +16,9 @@ export default async function (client: Client) {
             const hasRole = trigger.roleIds.some((role) => userRoles?.includes(role))
             if (!hasRole) return
           }
-          if (trigger.type === "userLeaves") {
+          if (trigger.type === 'userLeaves') {
             addLog(`triggerWorkflow ${trigger.webhookId}`, client)
-            const placeholderMatchingId = trigger.placeholder ? uid() : ""
+            const placeholderMatchingId = trigger.placeholder ? uid() : ''
             const isEnabled = await triggerWorkflow(
               trigger.webhookId,
               null,

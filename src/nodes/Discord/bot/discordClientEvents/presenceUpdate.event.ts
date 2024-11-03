@@ -1,11 +1,11 @@
-import { Client, TextChannel } from "discord.js"
-import { uid } from "uid"
+import { Client, TextChannel } from 'discord.js'
+import { uid } from 'uid'
 
-import { addLog, placeholderLoading, triggerWorkflow } from "../helpers"
-import state from "../state"
+import { addLog, placeholderLoading, triggerWorkflow } from '../helpers'
+import state from '../state'
 
 export default async function (client: Client) {
-  client.on("presenceUpdate", (oldPresence, newPresence) => {
+  client.on('presenceUpdate', (oldPresence, newPresence) => {
     const member = newPresence.member
     try {
       if (!member || member.user.system) return
@@ -18,11 +18,11 @@ export default async function (client: Client) {
             if (!hasRole) return
           }
           if (
-            trigger.type === "userPresenceUpdate" &&
-            (trigger.presence === newPresence.status || trigger.presence === "any")
+            trigger.type === 'userPresenceUpdate' &&
+            (trigger.presence === newPresence.status || trigger.presence === 'any')
           ) {
             addLog(`triggerWorkflow ${trigger.webhookId}`, client)
-            const placeholderMatchingId = trigger.placeholder ? uid() : ""
+            const placeholderMatchingId = trigger.placeholder ? uid() : ''
             const isEnabled = await triggerWorkflow(
               trigger.webhookId,
               null,
