@@ -64,7 +64,7 @@ importers:
         version: 5.0.0
       n8n-core:
         specifier: ^1.70.0
-        version: 1.71.0
+        version: 1.71.1
       n8n-workflow:
         specifier: ^1.69.0
         version: 1.70.0
@@ -186,8 +186,8 @@ packages:
   '@n8n/client-oauth2@0.21.0':
     resolution: {integrity: sha512-o3kmCzvJJnmq+8Ae0KaUkTG80V0OxGKw1PM7i+1d3S3s+s3VioOlf9iyBk4jU+dsgbIMvDkFl9kEKz1wlg5VPw==}
 
-  '@n8n/config@1.21.0':
-    resolution: {integrity: sha512-Zquk9aUooIE/n2XF4D3qIUG8OI5azOfoLSJDYXqZV9byGmLN8/LUDkZ8ofO1VRGAQfvkQ34sI78D55LmSKoxtg==}
+  '@n8n/config@1.21.1':
+    resolution: {integrity: sha512-3Qv58GNyEDyHtsxPUyRroFAcMNu9yCaBHmbKjWQGg8uVZw3fYEpwdhaNS80af/M3Eprxpikk2fCZENWV0fCmSg==}
 
   '@n8n/tournament@1.0.5':
     resolution: {integrity: sha512-IPBHa7gC0wwHVct/dnBquHz+uMCDZaZ05cor1D/rjlwaOe/PVu5mtoZaPHYuR98R3W1/IyxC5PuBd0JizDP9gg==}
@@ -1322,8 +1322,8 @@ packages:
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
-  langsmith@0.2.8:
-    resolution: {integrity: sha512-wKVNZoYtd8EqQWUEsfDZlZ77rH7vVqgNtONXRwynUp7ZFMFUIPhSlqE9pXqrmYPE8ZTBFj7diag2lFgUuaOEKw==}
+  langsmith@0.2.11:
+    resolution: {integrity: sha512-rVPUN/jQEHjTuYaoVKGjfb3NsYNLGTQT9LXcgJvka5M0EDcXciC598A+DsAQrl6McdfSJCFJDelgRPqVoF2xNA==}
     peerDependencies:
       openai: '*'
     peerDependenciesMeta:
@@ -1413,8 +1413,8 @@ packages:
     resolution: {integrity: sha512-32GSKM3Wyc8dg/p39lWPKYu8zci9mJFzV1Np9Of0ZEpe6Fhssn/FbI7ywAMd40uX+p3ZKh3T5EeCFv81qS3HmQ==}
     engines: {node: '>= 10.13.0'}
 
-  n8n-core@1.71.0:
-    resolution: {integrity: sha512-C0f5t9hM8g0DLLz99Z/lxb2syMkX0LFTeJ0F179pKw73A+8kw2cFCpeC7+HNnrIgL0KdYVd/aTyPZQI5NrFwcQ==}
+  n8n-core@1.71.1:
+    resolution: {integrity: sha512-EyXqc6YEzzddVO3Ue0EUQ5BOrhMMtGIKMq13f4MVVtwvq3ajY1xO88meMRv7E/WOpkDXRSK0K65gBw66ta1LAQ==}
     hasBin: true
 
   n8n-workflow@1.70.0:
@@ -2164,7 +2164,7 @@ snapshots:
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.15
-      langsmith: 0.2.8
+      langsmith: 0.2.11
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -2180,7 +2180,7 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@n8n/config@1.21.0':
+  '@n8n/config@1.21.1':
     dependencies:
       reflect-metadata: 0.2.2
       typedi: 0.10.0
@@ -2507,7 +2507,7 @@ snapshots:
   axios@1.7.4:
     dependencies:
       follow-redirects: 1.15.9
-      form-data: 4.0.0
+      form-data: 4.0.1
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
@@ -3490,7 +3490,7 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  langsmith@0.2.8:
+  langsmith@0.2.11:
     dependencies:
       '@types/uuid': 10.0.0
       commander: 10.0.1
@@ -3573,11 +3573,11 @@ snapshots:
 
   mute-stdout@2.0.0: {}
 
-  n8n-core@1.71.0:
+  n8n-core@1.71.1:
     dependencies:
       '@langchain/core': 0.3.19
       '@n8n/client-oauth2': 0.21.0
-      '@n8n/config': 1.21.0
+      '@n8n/config': 1.21.1
       aws4: 1.11.0
       axios: 1.7.4
       concat-stream: 2.0.0
