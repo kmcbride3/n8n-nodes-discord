@@ -61,7 +61,7 @@
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.8",
-    "@types/node": "^22.14.1",
+    "@types/node": "^24.0.15",
     "@types/node-ipc": "^9.2.3",
     "eslint": "^9.24.0",
     "eslint-config-prettier": "^10.1.2",
