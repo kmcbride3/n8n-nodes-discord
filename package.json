@@ -1,6 +1,6 @@
 {
   "name": "@kmcbride3/n8n-nodes-discord",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "nodes to trigger workflows from Discord or send interactive messages. Uses the components API which allows to create dialogs (e.g. attach buttons and wait for the user to click on them)",
   "keywords": [
     "n8n",
@@ -31,7 +31,7 @@
     "lint:format": "prettier src/nodes src/credentials --write",
     "lint": "pnpm lint:format && pnpm lint:fix",
     "publish": "pnpm build && pnpm publish --access public",
-    "publish:test": "pnpm build && pnpm publish --access private"
+    "publish:test": "pnpm build && pnpm publish --access restricted"
   },
   "files": [
     "dist"
