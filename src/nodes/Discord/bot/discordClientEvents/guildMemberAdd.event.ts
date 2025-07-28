@@ -13,26 +13,36 @@ export default function (client: Client) {
           if (trigger.type === 'userJoins') {
             addLog(`triggerWorkflow ${trigger.webhookId}`, client)
             const placeholderMatchingId = trigger.placeholder ? generateUniqueId() : ''
-            const isEnabled = await triggerWorkflow(
-              trigger.webhookId,
-              null,
-              placeholderMatchingId,
-              state.baseUrl,
-              member.user,
-              key,
-            ).catch((e) => e)
+            let isEnabled = false
+            try {
+              const result = await triggerWorkflow(
+                trigger.webhookId,
+                null,
+                placeholderMatchingId,
+                state.baseUrl,
+                member.user,
+                key,
+              )
+              isEnabled = Boolean(result)
+            } catch (e) {
+              addLog(e instanceof Error ? e.message : String(e), client)
+            }
             if (isEnabled && trigger.placeholder) {
-              const channel = client.channels.cache.get(key)
-              const placeholder = await (channel as TextChannel)
-                .send(trigger.placeholder)
-                .catch((e: unknown) => addLog(`${e}`, client))
+              const channelObj = client.channels.cache.get(key)
+              if (!channelObj || !channelObj.isTextBased()) return
+              let placeholder
+              try {
+                placeholder = await (channelObj as TextChannel).send(trigger.placeholder)
+              } catch (e) {
+                addLog(e instanceof Error ? e.message : String(e), client)
+              }
               if (placeholder) placeholderLoading(placeholder, placeholderMatchingId, trigger.placeholder)
             }
           }
         })
       })
     } catch (e) {
-      addLog(`${e}`, client)
+      addLog(e instanceof Error ? e.message : String(e), client)
     }
   })
 }

@@ -28,4 +28,8 @@ export default function (ipc: typeof Ipc, client: Client) {
       addLog(`${e}`, client)
     }
   })
+
+  ipc.of.bot.on('list:channels', (data: { channels: string[] }) => {
+    state.channelList = data.channels
+  })
 }

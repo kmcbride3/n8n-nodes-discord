@@ -1,5 +1,21 @@
 import axios from 'axios'
-import { Client, Message, TextChannel, User } from 'discord.js'
+import {
+  ButtonBuilder,
+  ButtonStyle,
+  Client,
+  DiscordAPIError,
+  Guild,
+  GuildMember,
+  HTTPError,
+  Message,
+  PermissionFlagsBits,
+  RateLimitError,
+  Role,
+  StringSelectMenuBuilder,
+  TextChannel,
+  ThreadChannel,
+  User,
+} from 'discord.js'
 import { hexoid } from 'hexoid'
 import { INodePropertyOptions } from 'n8n-workflow'
 import ipc from 'node-ipc'
@@ -83,11 +99,6 @@ export const getChannels = async (credentials: ICredentials): Promise<INodePrope
   ]
 }
 
-export interface IRole {
-  name: string
-  id: string
-}
-
 export const getRoles = async (credentials: ICredentials): Promise<INodePropertyOptions[]> => {
   const endMessage = ' - Close and reopen this node modal once you have made changes.'
 
@@ -155,9 +166,8 @@ export const triggerWorkflow = async (
   const headers = {
     accept: 'application/json',
   }
-
-  const res = await axios
-    .post(
+  try {
+    const res = await axios.post(
       `${baseUrl}/webhook${state.testMode ? '-test' : ''}/${webhookId}/webhook`,
       {
         content: message?.content,
@@ -178,17 +188,24 @@ export const triggerWorkflow = async (
       },
       { headers },
     )
-    .catch((e: Error) => {
-      console.log(e)
-      if (state.triggers[webhookId] && !state.testMode) {
-        state.triggers[webhookId].active = false
-        ipc.connectTo('bot', () => {
-          ipc.of.bot.emit('trigger', { ...state.triggers[webhookId], baseUrl: state.baseUrl })
-        })
-      }
-    })
-
-  return Boolean(res)
+    return Boolean(res)
+  } catch (error) {
+    // Use message?.client if available, otherwise require client to be passed explicitly
+    const client = message?.client ?? (typeof user === 'object' && 'client' in user ? (user as User).client : undefined)
+    addLog(
+      error instanceof DiscordAPIError || error instanceof HTTPError || error instanceof RateLimitError
+        ? `triggerWorkflow Discord.js error: ${error.message}`
+        : `triggerWorkflow error: ${error.message}`,
+      client as Client,
+    )
+    if (state.triggers[webhookId] && !state.testMode) {
+      state.triggers[webhookId].active = false
+      ipc.connectTo('bot', () => {
+        ipc.of.bot.emit('trigger', { ...state.triggers[webhookId], baseUrl: state.baseUrl })
+      })
+    }
+    return false
+  }
 }
 
 export const addLog = (message: string, client: Client) => {
@@ -203,16 +220,17 @@ export const addLog = (message: string, client: Client) => {
   }
 }
 
-export const ipcRequest = (type: string, parameters: Record<string, unknown>): Promise<unknown> => {
+export const ipcRequest = <T = object>(type: string, parameters: Record<string, object>): Promise<T> => {
   return new Promise((resolve) => {
     ipc.config.retry = 1500
     ipc.connectTo('bot', () => {
       ipc.of.bot.emit(type, parameters)
-      if (parameters.botCustomization && parameters.botActivity) ipc.of.bot.emit('bot:status', parameters)
-
-      ipc.of.bot.on(type, (data: unknown) => {
+      if ('botCustomization' in parameters && 'botActivity' in parameters) ipc.of.bot.emit('bot:status', parameters)
+      const handler = (data: T) => {
         resolve(data)
-      })
+        ipc.of.bot.off(type, handler)
+      }
+      ipc.of.bot.on(type, handler)
     })
   })
 }
@@ -356,4 +374,107 @@ export function withTimeout<T>(promise: Promise<T>, ms: number) {
 
 export function generateUniqueId(length = 12): string {
   return hexoid(length)()
+}
+
+// Example: Permission check using Discord.js built-in
+export function hasPermission(
+  member: User | { permissions?: Role['permissions'] },
+  permission: keyof typeof PermissionFlagsBits,
+): boolean {
+  if ('permissions' in member && typeof member.permissions?.has === 'function') {
+    return member.permissions.has(PermissionFlagsBits[permission])
+  }
+  return false
+}
+
+// Example: Thread management using Discord.js v14+
+export async function archiveThread(thread: ThreadChannel): Promise<void> {
+  try {
+    if (!thread.archived) {
+      await thread.setArchived(true)
+    }
+  } catch (error) {
+    if (error instanceof DiscordAPIError || error instanceof HTTPError || error instanceof RateLimitError) {
+      addLog(`Thread archive failed: ${error.message}`, thread.client)
+    } else {
+      throw error
+    }
+  }
+}
+
+// Example: Message component builder usage
+export function buildButton(label: string, style: ButtonStyle, customId: string): ButtonBuilder {
+  return new ButtonBuilder().setLabel(label).setStyle(style).setCustomId(customId)
+}
+
+export function buildSelectMenu(
+  options: { label: string; value: string; description?: string }[],
+  customId: string,
+): StringSelectMenuBuilder {
+  const selectMenu = new StringSelectMenuBuilder().setCustomId(customId)
+  selectMenu.addOptions(options.map((opt) => ({ label: opt.label, value: opt.value, description: opt.description })))
+  return selectMenu
+}
+
+export const REQUIRED_PERMISSIONS = [
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.SendMessages,
+  PermissionFlagsBits.ManageMessages,
+  PermissionFlagsBits.EmbedLinks,
+  PermissionFlagsBits.AttachFiles,
+  PermissionFlagsBits.ReadMessageHistory,
+  PermissionFlagsBits.MentionEveryone,
+  PermissionFlagsBits.UseApplicationCommands,
+  PermissionFlagsBits.ManageRoles,
+  PermissionFlagsBits.ManageThreads,
+]
+
+export function getMissingPermissions(
+  member: GuildMember,
+  channel: TextChannel | null,
+  required: bigint[] = REQUIRED_PERMISSIONS,
+): string[] {
+  if (!channel) return required.map((perm) => permissionNameFromBit(perm))
+  const perms = channel.permissionsFor(member)
+  if (!perms) return required.map((perm) => permissionNameFromBit(perm))
+  return required.filter((perm) => !perms.has(perm)).map((perm) => permissionNameFromBit(perm))
+}
+
+function permissionNameFromBit(bit: bigint): string {
+  // Find the key name for the permission bit
+  for (const [key, value] of Object.entries(PermissionFlagsBits)) {
+    if (value === bit) return key
+  }
+  return bit.toString()
+}
+
+export async function checkBotPermissionsOnStartup(
+  client: Client,
+  guild: Guild,
+  logFn: (msg: string) => void = console.error,
+): Promise<boolean> {
+  try {
+    const botMember = await guild.members.fetchMe()
+    const textChannels = guild.channels.cache.filter((ch): ch is TextChannel => ch.isTextBased() && ch.type === 0)
+    let allOk = true
+    for (const channel of textChannels.values()) {
+      const missing = getMissingPermissions(botMember, channel)
+      if (missing.length) {
+        logFn(`Bot is missing permissions in channel #${channel.name}: ${missing.join(', ')}`)
+        allOk = false
+      }
+    }
+    return allOk
+  } catch (err) {
+    logFn(`Failed to check bot permissions: ${(err as Error).message}`)
+    return false
+  }
+}
+
+export function generateInviteUrl(clientId: string, missingPerms: string[]): string {
+  const bits = missingPerms
+    .map((name) => PermissionFlagsBits[name as keyof typeof PermissionFlagsBits])
+    .filter((bit): bit is bigint => typeof bit === 'bigint')
+    .reduce((acc, bit) => acc | bit, 0n)
+  return `https://discord.com/oauth2/authorize?client_id=${clientId}&scope=bot+applications.commands&permissions=${bits.toString()}`
 }

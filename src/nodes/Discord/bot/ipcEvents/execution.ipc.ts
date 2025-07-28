@@ -11,13 +11,13 @@ export default function (ipc: typeof Ipc, client: Client): void {
     try {
       ipc.server.emit(socket, 'execution', true)
       if (data.executionId && data.channelId) {
-        state.executionMatching[data.executionId] = {
+        state.executionMatching.set(data.executionId, {
           channelId: data.channelId,
           ...(data.userId ? { userId: data.userId } : {}),
-        }
+        })
 
         if (data.placeholderId && data.apiKey && data.baseUrl) {
-          state.executionMatching[data.executionId].placeholderId = data.placeholderId
+          state.executionMatching.get(data.executionId)!.placeholderId = data.placeholderId
 
           // Track execution timeouts to prevent memory leaks
           const executionTimeouts = new Map<string, NodeJS.Timeout>()

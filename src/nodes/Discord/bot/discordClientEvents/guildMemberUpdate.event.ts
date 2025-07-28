@@ -69,21 +69,24 @@ async function processRoleChanges(
         addLog(`triggerWorkflow ${trigger.webhookId}`, client)
         const placeholderMatchingId = trigger.placeholder ? generateUniqueId() : ''
 
-        const isEnabled = await triggerWorkflow(
-          trigger.webhookId,
-          null,
-          placeholderMatchingId,
-          state.baseUrl,
-          member.user,
-          key,
-          undefined,
-          undefined,
-          addedRoles,
-          removedRoles,
-        ).catch((error: Error) => {
-          addLog(`triggerWorkflow error: ${error.message}`, client)
-          return false
-        })
+        let isEnabled = false
+        try {
+          const result = await triggerWorkflow(
+            trigger.webhookId,
+            null,
+            placeholderMatchingId,
+            state.baseUrl,
+            member.user,
+            key,
+            undefined,
+            undefined,
+            addedRoles,
+            removedRoles,
+          )
+          isEnabled = Boolean(result)
+        } catch (error) {
+          addLog(`triggerWorkflow error: ${error instanceof Error ? error.message : String(error)}`, client)
+        }
 
         if (isEnabled && trigger.placeholder) {
           await createPlaceholderMessage(client, key, trigger.placeholder, placeholderMatchingId)
@@ -103,19 +106,22 @@ async function processNicknameChange(client: Client, currentNick: string, member
         addLog(`triggerWorkflow ${trigger.webhookId}`, client)
         const placeholderMatchingId = trigger.placeholder ? generateUniqueId() : ''
 
-        const isEnabled = await triggerWorkflow(
-          trigger.webhookId,
-          null,
-          placeholderMatchingId,
-          state.baseUrl,
-          member.user,
-          key,
-          undefined,
-          currentNick,
-        ).catch((error: Error) => {
-          addLog(`triggerWorkflow error: ${error.message}`, client)
-          return false
-        })
+        let isEnabled = false
+        try {
+          const result = await triggerWorkflow(
+            trigger.webhookId,
+            null,
+            placeholderMatchingId,
+            state.baseUrl,
+            member.user,
+            key,
+            undefined,
+            currentNick,
+          )
+          isEnabled = Boolean(result)
+        } catch (error) {
+          addLog(`triggerWorkflow error: ${error instanceof Error ? error.message : String(error)}`, client)
+        }
 
         if (isEnabled && trigger.placeholder) {
           await createPlaceholderMessage(client, key, trigger.placeholder, placeholderMatchingId)

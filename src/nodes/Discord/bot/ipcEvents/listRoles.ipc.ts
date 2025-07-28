@@ -26,4 +26,8 @@ export default function (ipc: typeof Ipc, client: Client) {
       addLog(`${e}`, client)
     }
   })
+
+  ipc.of.bot.on('list:roles', (data: { roles: string[] }) => {
+    state.roles = data.roles
+  })
 }

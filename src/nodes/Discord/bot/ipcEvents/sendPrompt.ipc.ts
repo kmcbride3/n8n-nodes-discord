@@ -11,6 +11,7 @@ import {
   Message,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
+  TextChannel,
 } from 'discord.js'
 import { Socket } from 'net'
 import Ipc from 'node-ipc'
@@ -358,6 +359,13 @@ export default function (ipc: typeof Ipc, client: Client): void {
     } catch (e) {
       addLog(`Error in sendPrompt: ${e instanceof Error ? e.message : String(e)}`, client)
       ipc.server.emit(socket, 'sendPrompt', { error: e instanceof Error ? e.message : String(e) })
+    }
+  })
+
+  ipc.of.bot.on('send:prompt', (data: { channelId: string; content: string }) => {
+    const channel = client.channels.cache.get(data.channelId)
+    if (channel && channel.isTextBased()) {
+      ;(channel as TextChannel).send(data.content)
     }
   })
 }

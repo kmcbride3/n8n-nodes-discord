@@ -36,7 +36,7 @@ export const registerCommands = async (
   token: string,
   clientId: string,
   commands: RESTPostAPIApplicationCommandsJSONBody[] = [],
-): Promise<void> => {
+): Promise<Promise<{ default: Command }>[]> => {
   const rest = new REST({ version: '10' }).setToken(token)
 
   try {
@@ -48,11 +48,13 @@ export const registerCommands = async (
   } catch (error) {
     console.error(error)
   }
+  return awaitingCommands
 }
 
 export default async function (token: string, clientId: string, client: Client) {
   // Register commands
-  const commands = await registerCommands(token, clientId)
+  const commandModules = await registerCommands(token, clientId)
+  const commands = await Promise.all(commandModules)
 
   // Command execution handler when an interaction is created
   client.on('interactionCreate', async (interaction: Interaction) => {
@@ -68,20 +70,16 @@ export default async function (token: string, clientId: string, client: Client) 
       if (!member.permissions.has('ADMINISTRATOR' as PermissionResolvable)) return
 
       const { commandName, options } = interaction
-
-      // Find the index of the command
       const i = imports.indexOf(commandName)
       if (i === -1) return
-
       const command = commands[i].default
 
-      // Execute the command
+      const inputValue = options.get('input')?.value
       const reply = await command
-        .executeCommand(options.get('input')?.value, interaction)
+        .executeCommand(typeof inputValue === 'string' ? inputValue : undefined, interaction)
         .catch((e: Error) => e.message)
       const botReply = await interaction.reply({ content: reply, fetchReply: true }).catch((e) => e)
 
-      // Handle auto-remove of messages based on command params or if the reply is "Done!"
       if (command.params?.autoRemove || reply === 'Done!') {
         setTimeout(() => {
           botReply.delete().catch((e: Error) => console.log(e))

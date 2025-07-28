@@ -189,4 +189,10 @@ export default function (ipc: typeof Ipc, client: Client): void {
       }
     },
   )
+
+  ipc.of.bot.on('trigger', (data: { webhookId: string; active: boolean }) => {
+    if (state.triggers[data.webhookId]) {
+      state.triggers[data.webhookId].active = data.active
+    }
+  })
 }

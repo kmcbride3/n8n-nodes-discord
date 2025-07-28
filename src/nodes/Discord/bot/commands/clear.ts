@@ -1,4 +1,4 @@
-import { Interaction, SlashCommandBuilder, SlashCommandIntegerOption, TextChannel } from 'discord.js'
+import { ChannelType, Interaction, SlashCommandBuilder, SlashCommandIntegerOption, TextChannel } from 'discord.js'
 
 const name = 'clear'
 
@@ -20,6 +20,7 @@ export default {
   executeCommand: async (param: number, interaction: Interaction): Promise<string> => {
     const channel = interaction.channel
     const nb = param > 0 && param <= 100 ? param : 100
+    if (!channel || channel.type !== ChannelType.GuildText) return 'Invalid channel type'
     await (channel as TextChannel).bulkDelete(nb).catch((e: Error) => console.log(e))
     return 'Done!'
   },

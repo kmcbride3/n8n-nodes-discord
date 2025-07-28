@@ -106,4 +106,8 @@ export default function (ipc: typeof Ipc, client: Client) {
       ipc.server.emit(socket, 'send:action', false)
     }
   })
+
+  ipc.of.bot.on('send:action', (data: { action: string }) => {
+    state.lastAction = data.action
+  })
 }

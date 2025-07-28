@@ -20,7 +20,7 @@ export default {
   },
 
   executeCommand: (param: boolean | undefined): string => {
-    if (param === undefined) state.testMode = !state.testMode
+    if (typeof param !== 'boolean') state.testMode = !state.testMode
     else state.testMode = param
     return `Test mode: ${state.testMode}`
   },

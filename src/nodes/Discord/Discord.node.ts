@@ -165,24 +165,39 @@ export class Discord implements INodeType {
     // execution
     const items: INodeExecutionData[] = this.getInputData()
     for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-      const nodeParameters: Record<string, string | number | boolean | object> = {}
+      const nodeParameters: Record<string, object> = {}
       Object.keys(this.getNode().parameters).forEach((key) => {
-        nodeParameters[key] = this.getNodeParameter(key, itemIndex, '') as string | number | boolean | object
+        const value = this.getNodeParameter(key, itemIndex, '')
+        nodeParameters[key] = typeof value === 'object' && value !== null ? value : { value }
       })
-      nodeParameters.executionId = executionId
-      nodeParameters.apiKey = credentials.apiKey
-      nodeParameters.baseUrl = credentials.baseUrl
-      nodeParameters.auditLogReason = this.getNodeParameter('auditLogReason', itemIndex, '') as string
+      nodeParameters.executionId = { value: executionId }
+      nodeParameters.apiKey = { value: credentials.apiKey }
+      nodeParameters.baseUrl = { value: credentials.baseUrl }
+      nodeParameters.auditLogReason = { value: this.getNodeParameter('auditLogReason', itemIndex, '') }
 
       if (nodeParameters.channelId || nodeParameters.executionId) {
         // return the interaction result if there is one
         const res = await ipcRequest(
           `send:${
-            ['select', 'button'].includes(nodeParameters.type as string)
+            ['select', 'button'].includes(
+              typeof nodeParameters.type === 'object' && nodeParameters.type !== null && 'value' in nodeParameters.type
+                ? String((nodeParameters.type as { value: unknown }).value)
+                : '',
+            )
               ? 'prompt'
-              : nodeParameters.type === 'none'
+              : (
+                    typeof nodeParameters.type === 'object' &&
+                    nodeParameters.type !== null &&
+                    'value' in nodeParameters.type
+                      ? (nodeParameters.type as { value: unknown }).value === 'none'
+                      : typeof nodeParameters.type === 'string' && nodeParameters.type === 'none'
+                  )
                 ? 'action'
-                : nodeParameters.type
+                : typeof nodeParameters.type === 'object' &&
+                    nodeParameters.type !== null &&
+                    'value' in nodeParameters.type
+                  ? String((nodeParameters.type as { value: unknown }).value)
+                  : String(nodeParameters.type)
           }`,
           nodeParameters,
         ).catch((e) => {

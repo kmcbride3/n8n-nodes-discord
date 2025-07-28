@@ -4,6 +4,7 @@ import Ipc from 'node-ipc'
 
 import { addLog } from '../helpers'
 import state from '../state'
+
 export default function (ipc: typeof Ipc, client: Client) {
   ipc.server.on(
     'bot:status',
@@ -21,4 +22,8 @@ export default function (ipc: typeof Ipc, client: Client) {
       }
     },
   )
+
+  ipc.of.bot.on('bot:status', (data: { status: string }) => {
+    state.ready = data.status === 'ready'
+  })
 }

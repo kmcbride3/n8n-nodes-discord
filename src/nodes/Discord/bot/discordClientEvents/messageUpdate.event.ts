@@ -4,7 +4,7 @@ import { addLog, triggerWorkflow } from '../helpers'
 import state from '../state'
 
 export default function (client: Client): void {
-  client.on('messageUpdate', (oldMessage, newMessage) => {
+  client.on('messageUpdate', async (oldMessage, newMessage) => {
     try {
       if (Object.keys(state.channels).length > 0) {
         const matchedTriggers = Object.values(state.channels).flatMap((triggers) =>
@@ -13,16 +13,17 @@ export default function (client: Client): void {
           ),
         )
 
-        matchedTriggers.forEach(async (trigger) => {
+        for (const trigger of matchedTriggers) {
           addLog(`triggerWorkflow ${trigger.webhookId}`, client)
-
-          await triggerWorkflow(trigger.webhookId, newMessage, '', state.baseUrl).catch((e: Error) => {
-            addLog(`Error triggering workflow: ${e.message}`, client)
-          })
-        })
+          try {
+            await triggerWorkflow(trigger.webhookId, newMessage, '', state.baseUrl)
+          } catch (e) {
+            addLog(`Error triggering workflow: ${e instanceof Error ? e.message : String(e)}`, client)
+          }
+        }
       }
     } catch (e) {
-      addLog(`${e}`, client)
+      addLog(`${e instanceof Error ? e.message : String(e)}`, client)
     }
   })
 }

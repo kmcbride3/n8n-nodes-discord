@@ -48,4 +48,11 @@ export default function (ipc: typeof Ipc, client: Client): void {
       ipc.server.emit(socket, 'credentials', 'error')
     }
   })
+
+  const credentialsHandler = (data: { token: string; clientId: string }) => {
+    state.token = data.token
+    state.clientId = data.clientId
+  }
+  ipc.of.bot.on('credentials', credentialsHandler)
+  // Cleanup example: call ipc.of.bot.off('credentials', credentialsHandler) when needed
 }

@@ -23,17 +23,17 @@ export default {
   },
 
   executeCommand: async (param: string, interaction: Interaction): Promise<string> => {
-    if ((parseInt(param) > 0 && parseInt(param) <= 100) || !param) {
+    const num = parseInt(param)
+    if ((num > 0 && num <= 100) || !param) {
       if (!state.logs.length) return 'There is no log'
       else {
         let content = ''
-        const logs = state.logs.slice(-parseInt(param ?? 100))
+        const logs = state.logs.slice(-(num > 0 && num <= 100 ? num : 100))
         logs.forEach((log) => {
           content += `**${log}**\n`
         })
-
         if (interaction.channel?.type === ChannelType.GuildText) {
-          await interaction.channel?.send(content)
+          await interaction.channel.send(content)
         }
         return 'Logs:'
       }

@@ -11,6 +11,7 @@ import messageUpdate from './discordClientEvents/messageUpdate.event'
 import presenceUpdate from './discordClientEvents/presenceUpdate.event'
 import threadCreate from './discordClientEvents/threadCreate.event'
 import threadUpdate from './discordClientEvents/threadUpdate.event'
+import { checkBotPermissionsOnStartup, generateInviteUrl } from './helpers'
 import botStatus from './ipcEvents/botStatus.ipc'
 import credentials from './ipcEvents/credentials.ipc'
 import execution from './ipcEvents/execution.ipc'
@@ -41,6 +42,25 @@ export default function bot() {
       partials: [Partials.Message, Partials.Channel, Partials.Reaction],
     })
 
+    client.once('ready', async () => {
+      console.log(`Logged in as ${client.user?.tag}`)
+      for (const guild of client.guilds.cache.values()) {
+        let missingPerms: string[] = []
+        await checkBotPermissionsOnStartup(client, guild, (msg) => {
+          console.error(msg)
+          // Extract missing permissions from the message
+          const match = msg.match(/: (.+)$/)
+          if (match) {
+            missingPerms.push(...match[1].split(', ').map((s) => s.trim()))
+          }
+        })
+        if (missingPerms.length && client.user) {
+          const inviteUrl = generateInviteUrl(client.user.id, missingPerms)
+          console.error(`Invite the bot with the required permissions using this link:\n${inviteUrl}`)
+        }
+      }
+    })
+
     // Initialize IPC server
     Ipc.serve(() => {
       // Register Discord client events
@@ -69,6 +89,6 @@ export default function bot() {
 
     Ipc.server.start()
   } catch (e) {
-    console.log(e)
+    console.log(e instanceof Error ? e.message : String(e))
   }
 }

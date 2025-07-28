@@ -287,4 +287,11 @@ export default function (ipc: typeof Ipc, client: Client) {
       ipc.server.emit(socket, 'send:message', false)
     }
   })
+
+  ipc.of.bot.on('send:message', (data: { channelId: string; content: string }) => {
+    const channel = client.channels.cache.get(data.channelId)
+    if (channel && channel.isTextBased()) {
+      ;(channel as TextChannel).send(data.content)
+    }
+  })
 }

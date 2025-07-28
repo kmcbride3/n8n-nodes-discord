@@ -80,7 +80,7 @@ export interface IPromptData {
 }
 
 export default {
-  promptDataMap: new Map<string, IPromptData>(),
+  promptDataMap: new Collection<string, IPromptData>(),
   ready: false,
   login: false,
   clientId: '',
@@ -95,5 +95,8 @@ export default {
   executionMatching: new Collection<string, IExecutionMatching>(),
   placeholderMatching: new Collection<string, string>(),
   placeholderWaiting: new Collection<string, boolean>(),
-  promptData: {} as Record<string, IPromptData>,
+  promptData: new Collection<string, IPromptData>(),
+  lastAction: '',
+  roles: [] as string[],
+  channelList: [] as string[],
 }

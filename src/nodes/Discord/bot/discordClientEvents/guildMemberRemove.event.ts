@@ -25,19 +25,20 @@ export default function (client: Client) {
               state.baseUrl,
               member.user,
               key,
-            ).catch((e) => e)
+            ).catch((e: Error) => addLog(e.message, client))
             if (isEnabled && trigger.placeholder) {
               const channel = client.channels.cache.get(key)
+              if (!channel || !channel.isTextBased()) return
               const placeholder = await (channel as TextChannel)
                 .send(trigger.placeholder)
-                .catch((e: unknown) => addLog(`${(e as Error).message}`, client))
+                .catch((e: Error) => addLog(e.message, client))
               if (placeholder) placeholderLoading(placeholder, placeholderMatchingId, trigger.placeholder)
             }
           }
         })
       })
     } catch (e) {
-      addLog(`${e}`, client)
+      addLog(e instanceof Error ? e.message : String(e), client)
     }
   })
 }

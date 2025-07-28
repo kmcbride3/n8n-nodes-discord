@@ -65,24 +65,27 @@ async function executeTriggerWorkflow(
   const placeholderMatchingId = trigger.placeholder ? generateUniqueId() : ''
   const interactionValues = interaction.isButton() ? [interaction.customId] : interaction.values
 
-  const isEnabled = await triggerWorkflow(
-    trigger.webhookId,
-    null,
-    placeholderMatchingId,
-    state.baseUrl,
-    interaction.user,
-    interaction.channelId,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    interaction.message.id,
-    interactionValues,
-    userRoles,
-  ).catch((e: Error) => {
-    addLog(e.message, client)
-    return false
-  })
+  let isEnabled = false
+  try {
+    const result = await triggerWorkflow(
+      trigger.webhookId,
+      null,
+      placeholderMatchingId,
+      state.baseUrl,
+      interaction.user,
+      interaction.channelId,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      interaction.message.id,
+      interactionValues,
+      userRoles,
+    )
+    isEnabled = Boolean(result)
+  } catch (e) {
+    addLog(e instanceof Error ? e.message : String(e), client)
+  }
 
   await interaction.deferUpdate().catch((e: Error) => addLog(e.message, client))
 

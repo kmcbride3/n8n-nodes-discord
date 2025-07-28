@@ -12,7 +12,7 @@ export default function (client: Client): void {
         return
       }
 
-      const userRoles = (interaction.member?.roles as GuildMemberRoleManager).cache.map((role) => role.id)
+      const userRoles = (interaction.member?.roles as GuildMemberRoleManager)?.cache.map((role) => role.id) || []
       const input = interaction.options.getString('input')
 
       const channelTriggers = [...(state.channels[interaction.channelId] ?? []), ...(state.channels.all ?? [])]
@@ -43,33 +43,38 @@ export default function (client: Client): void {
           })
           .catch((e: Error) => addLog(e.message, client))
 
-        const isEnabled = await triggerWorkflow(
-          trigger.webhookId,
-          null,
-          placeholderMatchingId,
-          state.baseUrl,
-          interaction.user,
-          interaction.channelId,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          input ? [input] : undefined,
-          userRoles,
-        ).catch((e: Error) => {
-          addLog(e.message, client)
-          return false
-        })
+        let isEnabled = false
+        try {
+          const result = await triggerWorkflow(
+            trigger.webhookId,
+            null,
+            placeholderMatchingId,
+            state.baseUrl,
+            interaction.user,
+            interaction.channelId,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            input ? [input] : undefined,
+            userRoles,
+          )
+          isEnabled = Boolean(result)
+        } catch (e) {
+          addLog(e instanceof Error ? e.message : String(e), client)
+        }
 
         if (isEnabled && trigger.placeholder) {
           const channel = client.channels.cache.get(interaction.channelId)
           if (!channel || !channel.isTextBased()) continue
 
-          const placeholder = await (channel as TextChannel).send(trigger.placeholder).catch((e: Error) => {
-            addLog(e.message, client)
-            return null
-          })
+          let placeholder
+          try {
+            placeholder = await (channel as TextChannel).send(trigger.placeholder)
+          } catch (e) {
+            addLog(e instanceof Error ? e.message : String(e), client)
+          }
 
           if (placeholder) {
             await placeholderLoading(placeholder, placeholderMatchingId, trigger.placeholder)
@@ -77,11 +82,7 @@ export default function (client: Client): void {
         }
       }
     } catch (e) {
-      if (e instanceof Error) {
-        addLog(e.message, client)
-      } else {
-        addLog(`Unknown error: ${String(e)}`, client)
-      }
+      addLog(e instanceof Error ? e.message : `Unknown error: ${String(e)}`, client)
     }
   })
 }
