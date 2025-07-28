@@ -31,7 +31,7 @@
     "lint:format": "prettier src/nodes src/credentials --write",
     "lint": "pnpm lint:format && pnpm lint:fix",
     "publish": "pnpm build && pnpm publish --access public",
-    "publish:test": "pnpm build && pnpm publish --access restricted"
+    "publish:test": "pnpm publish --access restricted"
   },
   "files": [
     "dist"
