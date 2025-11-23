@@ -60,7 +60,10 @@
       "event-pubsub": "npm:@node-ipc/event-pubsub@^6.0.2",
       "glob": "^10.4.5",
       "@typescript-eslint/utils": "^8.45.0",
-      "form-data": "^4.0.4"
+      "form-data": "^4.0.4",
+      "js-yaml@<3.14.2": ">=3.14.2",
+      "js-yaml@>=4.0.0 <4.1.1": ">=4.1.1",
+      "glob@>=10.2.0 <10.5.0": ">=10.5.0"
     },
     "peerDependencyRules": {
       "allowedVersions": {
@@ -85,6 +88,8 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.7.0",
     "@types/node-ipc": "^9.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
     "eslint": "^9.37.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
@@ -101,7 +106,9 @@
     "typescript-eslint": "^8.46.0"
   },
   "dependencies": {
+    "axios": "^1.13.2",
     "discord.js": "^14.22.1",
+    "hexoid": "^2.0.0",
     "node-ipc": "^12.0.0",
     "tweetnacl": "^1.0.3"
   },
@@ -110,5 +117,5 @@
     "utf-8-validate": "^6.0.5",
     "zlib-sync": "^0.1.10"
   },
-  "packageManager": "pnpm@10.18.0+sha512.e804f889f1cecc40d572db084eec3e4881739f8dec69c0ff10d2d1beff9a4e309383ba27b5b750059d7f4c149535b6cd0d2cb1ed3aeb739239a4284a68f40cfa"
+  "packageManager": "pnpm@10.23.0+sha512.21c4e5698002ade97e4efe8b8b4a89a8de3c85a37919f957e7a0f30f38fbc5bbdd05980ffe29179b2fb6e6e691242e098d945d1601772cad0fef5fb6411e2a4b"
 }

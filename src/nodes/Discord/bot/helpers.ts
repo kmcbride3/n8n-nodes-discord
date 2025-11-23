@@ -387,8 +387,8 @@ export const placeholderLoading = (
   txt: string,
 ): Promise<string> => {
   return new Promise((resolve) => {
-    state.placeholderMatching[placeholderMatchingId] = placeholder.id
-    state.placeholderWaiting[placeholderMatchingId] = true
+    state.placeholderMatching.set(placeholderMatchingId, placeholder.id)
+    state.placeholderWaiting.set(placeholderMatchingId, true)
     let i = 0
     const waiting = () => {
       i++
@@ -396,18 +396,18 @@ export const placeholderLoading = (
       let content = `${txt}`
       for (let j = 0; j < i; j++) content += '.'
 
-      if (!state.placeholderMatching[placeholderMatchingId]) {
+      if (!state.placeholderMatching.get(placeholderMatchingId)) {
         placeholder.edit(txt).catch((e: Error) => e)
-        state.placeholderWaiting[placeholderMatchingId] = false
+        state.placeholderWaiting.set(placeholderMatchingId, false)
         resolve(txt)
         return
       }
       placeholder.edit(content).catch((e: Error) => e)
       setTimeout(() => {
-        if (state.placeholderMatching[placeholderMatchingId]) waiting()
+        if (state.placeholderMatching.get(placeholderMatchingId)) waiting()
         else {
           placeholder.edit(txt).catch((e: Error) => e)
-          state.placeholderWaiting[placeholderMatchingId] = false
+          state.placeholderWaiting.set(placeholderMatchingId, false)
           resolve(txt)
         }
       }, 800)

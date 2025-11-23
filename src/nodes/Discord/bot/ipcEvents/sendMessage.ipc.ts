@@ -162,7 +162,7 @@ async function handlePlaceholderUpdate(
 ): Promise<boolean> {
   if (!executionMatching?.placeholderId) return false
 
-  const realPlaceholderId = state.placeholderMatching[executionMatching.placeholderId]
+  const realPlaceholderId = state.placeholderMatching.get(executionMatching.placeholderId)
   if (!realPlaceholderId) return false
 
   // Check if channel has messages collection (exists on text-based channels)
@@ -182,7 +182,7 @@ async function handlePlaceholderUpdate(
     let retryCount = 0
     const retry = async () => {
       const placeholderId = executionMatching.placeholderId
-      if (placeholderId && state.placeholderWaiting[placeholderId] && retryCount < 10) {
+      if (placeholderId && state.placeholderWaiting.get(placeholderId) && retryCount < 10) {
         retryCount++
         setTimeout(() => retry(), 300)
       } else {
@@ -259,7 +259,7 @@ export default function (ipc: typeof Ipc, client: Client) {
     withWorkflowContext(nodeParameters.workflowId || null, () => {
       try {
         if (state.ready) {
-          const executionMatching = state.executionMatching[nodeParameters.executionId]
+          const executionMatching = state.executionMatching.get(nodeParameters.executionId)
           let channelId = ''
 
           if (nodeParameters.triggerPlaceholder || nodeParameters.triggerChannel) {

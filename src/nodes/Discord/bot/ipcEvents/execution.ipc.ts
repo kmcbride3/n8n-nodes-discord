@@ -11,14 +11,17 @@ export default function (ipc: typeof Ipc, client: Client): void {
     try {
       ipc.server.emit(socket, 'execution', true)
       if (data.executionId && data.channelId) {
-        state.executionMatching[data.executionId] = {
+        state.executionMatching.set(data.executionId, {
           channelId: data.channelId,
           ...(data.userId ? { userId: data.userId } : {}),
           ...(data.workflowId ? { workflowId: data.workflowId } : {}),
-        }
+        })
 
         if (data.placeholderId && data.apiKey && data.baseUrl) {
-          state.executionMatching[data.executionId].placeholderId = data.placeholderId
+          const execMatch = state.executionMatching.get(data.executionId)
+          if (execMatch) {
+            execMatch.placeholderId = data.placeholderId
+          }
 
           // Track execution timeouts to prevent memory leaks
           const executionTimeouts = new Map<string, NodeJS.Timeout>()
@@ -36,7 +39,7 @@ export default function (ipc: typeof Ipc, client: Client): void {
             }
 
             // Prevent checks if placeholder no longer exists
-            if (!state.placeholderMatching[placeholderId]) {
+            if (!state.placeholderMatching.get(placeholderId)) {
               return
             }
 
@@ -52,7 +55,7 @@ export default function (ipc: typeof Ipc, client: Client): void {
                 if (res?.data?.finished === false && res.data.stoppedAt === null) {
                   // Store timeout reference for cleanup
                   const timeout = setTimeout(() => {
-                    if (state.placeholderMatching[placeholderId]) {
+                    if (state.placeholderMatching.get(placeholderId)) {
                       checkExecution(placeholderId, executionId, apiKey, baseUrl)
                     }
                   }, 3000)

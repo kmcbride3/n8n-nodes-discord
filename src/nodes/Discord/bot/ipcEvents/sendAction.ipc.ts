@@ -11,10 +11,10 @@ export default function (ipc: typeof Ipc, client: Client) {
     withWorkflowContext(nodeParameters.workflowId || null, () => {
       try {
         if (state.ready) {
-          const executionMatching = state.executionMatching[nodeParameters.executionId]
+          const executionMatching = state.executionMatching.get(nodeParameters.executionId)
           let channelId = ''
           if (nodeParameters.triggerPlaceholder || nodeParameters.triggerChannel)
-            channelId = executionMatching?.channelId
+            channelId = executionMatching?.channelId || ''
           else channelId = nodeParameters.channelId
 
           if (!channelId && !nodeParameters.actionType) {
@@ -60,7 +60,7 @@ export default function (ipc: typeof Ipc, client: Client) {
               }
 
               if (nodeParameters.triggerPlaceholder && executionMatching?.placeholderId) {
-                const realPlaceholderId = state.placeholderMatching[executionMatching.placeholderId]
+                const realPlaceholderId = state.placeholderMatching.get(executionMatching.placeholderId)
                 if (realPlaceholderId) {
                   const message = await channel.messages.fetch(realPlaceholderId).catch((e: Error) => {
                     addLog(`${e}`, client, 'error')
@@ -71,7 +71,7 @@ export default function (ipc: typeof Ipc, client: Client) {
                   if (message?.delete) {
                     let retryCount = 0
                     const retry = async () => {
-                      if (state.placeholderWaiting[executionMatching.placeholderId] && retryCount < 10) {
+                      if (executionMatching.placeholderId && state.placeholderWaiting.get(executionMatching.placeholderId) && retryCount < 10) {
                         retryCount++
                         setTimeout(() => retry(), 300)
                       } else {
