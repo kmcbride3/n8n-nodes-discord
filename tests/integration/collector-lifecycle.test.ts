@@ -523,6 +523,9 @@ describe('Discord.js Collector Lifecycle Management', () => {
       })
 
       test('should handle filter function errors gracefully', () => {
+        // Suppress console.warn for this test since we're intentionally triggering an error
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation()
+
         const faultyFilter = () => {
           throw new Error('Filter error')
         }
@@ -542,6 +545,10 @@ describe('Discord.js Collector Lifecycle Management', () => {
         }
 
         expect(safeFilter(mockMessage)).toBe(false)
+        expect(consoleWarnSpy).toHaveBeenCalledWith('Filter error:', expect.any(Error))
+
+        // Restore console.warn
+        consoleWarnSpy.mockRestore()
       })
 
       test('should handle network disconnection during collection', () => {
