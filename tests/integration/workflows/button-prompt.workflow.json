@@ -1,0 +1,45 @@
+{
+  "name": "Discord Button Prompt Test",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "prompt",
+        "operation": "button",
+        "channelId": "123456789012345678",
+        "content": "Choose an option:",
+        "buttons": [
+          {
+            "button": {
+              "label": "Option A",
+              "value": "option_a",
+              "style": 1
+            }
+          },
+          {
+            "button": {
+              "label": "Option B",
+              "value": "option_b",
+              "style": 2
+            }
+          }
+        ],
+        "timeout": 300
+      },
+      "name": "Discord Button Prompt",
+      "type": "@kmcbride3/n8n-nodes-discord.discordV2",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "id": "test-button-prompt-node"
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "test-workflow-instance"
+  },
+  "pinData": {},
+  "versionId": "1"
+}

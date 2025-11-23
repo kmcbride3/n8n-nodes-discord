@@ -63,7 +63,7 @@ export const options: INodeProperties[] = [
       },
       {
         name: 'Thread Update',
-        value: 'message_update',
+        value: 'thread_update',
         description: 'When a thread is updated in the selected channels.',
       },
       {

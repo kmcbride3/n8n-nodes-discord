@@ -1,6 +1,6 @@
 {
-  "name": "@kmcbride3/n8n-nodes-discord",
-  "version": "0.7.6",
+  "name": "@kmcbride3/n8n-nodes-discord-experimental",
+  "version": "0.8.0-alpha.1",
   "description": "nodes to trigger workflows from Discord or send interactive messages. Uses the components API which allows to create dialogs (e.g. attach buttons and wait for the user to click on them)",
   "keywords": [
     "n8n",
@@ -22,15 +22,22 @@
   },
   "main": "index.js",
   "engines": {
-    "node": ">=16.9.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
     "lint:fix": "eslint src/nodes src/credentials --fix",
-    "lint:format": "prettier src/nodes src/credentials --write",
+    "lint:format": "prettier \"src/nodes\" \"src/credentials\" \"docs\" \"**/*.md\" --write",
     "lint": "pnpm lint:format && pnpm lint:fix",
-    "publish": "pnpm build && pnpm publish --access public"
+    "publish": "pnpm build && pnpm publish --access public",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:comprehensive": "node tests/run-comprehensive-tests.js",
+    "test:unit": "node tests/run-comprehensive-tests.js unit",
+    "test:integration": "node tests/run-comprehensive-tests.js integration",
+    "test:security": "node tests/run-comprehensive-tests.js security"
   },
   "files": [
     "dist"
@@ -38,7 +45,10 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
-      "dist/credentials/DiscordApi.credentials.js"
+      "dist/credentials/DiscordApi.credentials.js",
+      "dist/credentials/DiscordBotApi.credentials.js",
+      "dist/credentials/DiscordOAuth2Api.credentials.js",
+      "dist/credentials/DiscordWebhookApi.credentials.js"
     ],
     "nodes": [
       "dist/nodes/Discord/Discord.node.js",
@@ -48,40 +58,57 @@
   "pnpm": {
     "overrides": {
       "event-pubsub": "npm:@node-ipc/event-pubsub@^6.0.2",
-      "@typescript-eslint/utils": "^8.44.0",
-      "axios": "^1.12.2",
+      "glob": "^10.4.5",
+      "@typescript-eslint/utils": "^8.45.0",
       "form-data": "^4.0.4"
     },
     "peerDependencyRules": {
       "allowedVersions": {
-        "eslint": "^9.36.0",
+        "eslint": "^9.37.0",
         "event-pubsub": "npm:@node-ipc/event-pubsub@^6.0.2",
-        "@typescript-eslint/utils": "^8.44.0"
+        "glob": "^10.4.5",
+        "@typescript-eslint/utils": "^8.45.0"
       }
-    }
+    },
+    "onlyBuiltDependencies": [
+      "bufferutil",
+      "eslint-plugin-n8n-nodes-base",
+      "utf-8-validate",
+      "zlib-sync"
+    ]
   },
   "devDependencies": {
-    "@eslint/compat": "^1.3.2",
-    "@types/node": "^24.5.2",
+    "@eslint/compat": "^1.4.0",
+    "@eslint/js": "^9.37.0",
+    "@eslint/markdown": "^7.4.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.7.0",
     "@types/node-ipc": "^9.2.3",
-    "eslint": "^9.36.0",
+    "eslint": "^9.37.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-n8n-nodes-base": "^1.16.3",
+    "eslint-plugin-n8n-nodes-base": "^1.16.4",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "gulp": "^5.0.1",
-    "n8n-core": "^1.111.0",
-    "n8n-workflow": "^1.109.0",
+    "jest": "^30.2.0",
+    "n8n-core": "^1.114.0",
+    "n8n-workflow": "^1.112.0",
     "prettier": "^3.6.2",
-    "typescript": "^5.9.2",
-    "typescript-eslint": "^8.44.0"
+    "ts-jest": "^29.4.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.0"
   },
   "dependencies": {
-    "axios": "^1.12.2",
     "discord.js": "^14.22.1",
-    "hexoid": "^2.0.0",
-    "node-ipc": "^12.0.0"
+    "node-ipc": "^12.0.0",
+    "tweetnacl": "^1.0.3"
   },
-  "packageManager": "pnpm@9.12.3"
+  "optionalDependencies": {
+    "bufferutil": "^4.0.9",
+    "utf-8-validate": "^6.0.5",
+    "zlib-sync": "^0.1.10"
+  },
+  "packageManager": "pnpm@10.18.0+sha512.e804f889f1cecc40d572db084eec3e4881739f8dec69c0ff10d2d1beff9a4e309383ba27b5b750059d7f4c149535b6cd0d2cb1ed3aeb739239a4284a68f40cfa"
 }

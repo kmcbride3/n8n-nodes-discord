@@ -6,9 +6,18 @@
   "printWidth": 120,
   "endOfLine": "auto",
   "overrides": [
-  {
-    "files": ".prettierrc",
-    "options": { "parser": "json" }
-  }
-]
+    {
+      "files": ".prettierrc",
+      "options": { "parser": "json" }
+    },
+    {
+      "files": "**/*.md",
+      "options": {
+        "parser": "markdown",
+        "proseWrap": "always",
+        "htmlWhitespaceSensitivity": "ignore"
+      }
+    }
+  ]
 }
+

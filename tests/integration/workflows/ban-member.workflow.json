@@ -1,0 +1,29 @@
+{
+  "name": "Discord Member Ban Test",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "action",
+        "operation": "banMember",
+        "userId": "123456789012345678",
+        "deleteMessageDays": 1,
+        "reason": "Test ban from workflow"
+      },
+      "name": "Discord Ban Member",
+      "type": "@kmcbride3/n8n-nodes-discord.discordV2",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "id": "test-ban-member-node"
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "test-workflow-instance"
+  },
+  "pinData": {},
+  "versionId": "1"
+}

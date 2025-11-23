@@ -1,0 +1,28 @@
+{
+  "name": "Discord Message Send Test",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "channelId": "123456789012345678",
+        "content": "Test message from n8n workflow"
+      },
+      "name": "Discord Message Send",
+      "type": "@kmcbride3/n8n-nodes-discord.discordV2",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "id": "test-message-send-node"
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "test-workflow-instance"
+  },
+  "pinData": {},
+  "versionId": "1"
+}

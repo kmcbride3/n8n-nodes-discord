@@ -1,6 +1,279 @@
 # Changelog
 
+## Released (2025-10-05 0.8.0-beta.1) - Beta Release 🚀
+
+> **⚠️ Beta Release:** This is a major architectural milestone introducing n8n V2 node standard support alongside
+> existing V1 nodes. The codebase has undergone significant refactoring with comprehensive testing, but has not yet been
+> validated in production environments. API may evolve based on user feedback. More Discord operations will be added in
+> future releases.
+
+### Major Features
+
+#### n8n V2 Node Implementation
+
+- **New V2 Nodes**: Complete implementation of n8n V2 node standard alongside backward-compatible V1 nodes
+  - V2 Discord Send node with resource-based operations (Message, Prompt, Action, Webhook, Utility)
+  - V2 Discord Trigger node with declarative trigger registry pattern
+  - **Uses official n8n `DiscordBotApi` credential** (V1 nodes use custom credential for backward compatibility)
+  - Full type safety with n8n's `AllEntities<NodeMap>` pattern
+  - Proper error handling using n8n error types (NodeOperationError, NodeApiError)
+  - See [V1 to V2 Migration Guide](docs/migration/v1-to-v2.md) for credential migration details
+
+#### V2 Operations Architecture
+
+- **Message Operations**: send, deleteMessage, removeMessages (bulk delete)
+- **Prompt Operations**: button (interactive button prompts), select (dropdown menus)
+- **Action Operations**: addRole, removeRole, kickMember, banMember, timeoutMember
+- **Webhook Operations**: create, send (native Discord webhook support)
+- **Utility Operations**: utility helpers, interactionManager
+
+#### Trigger System Consolidation
+
+- **Trigger Factory Pattern**: Generic trigger creation using declarative configuration
+- **Trigger Registry**: Centralized registry for all 13 Discord trigger types
+  - Message triggers: message, message_update
+  - Thread triggers: thread, thread_update
+  - Command triggers: command, interaction
+  - User triggers: userJoins, userLeaves, userUpdate, presenceUpdate, userNickUpdated, userRoleAdded, userRoleRemoved
+- **Event Filtering & Transformation**: Declarative filter and transform functions per trigger type
+- **Intent Validation**: Automatic Discord Gateway intent validation per trigger type
+
+### Performance & Optimization
+
+#### Connection Management
+
+- **Client Pooling**: Efficient Discord client connection pooling with reference counting
+- **Connection Optimization**: Smart client reuse across operations with automatic cleanup
+- **WebSocket Enhancement**: Advanced WebSocket health monitoring and performance tracking
+- **Intent Optimization**: Operation-specific intent configurations for minimal resource usage
+- **Memory Management**: Automatic idle client cleanup with configurable thresholds
+
+#### Request Optimization
+
+- **Request Caching**: Canonical body parsing with LRU cache to avoid repeated JSON parsing
+- **Request Normalization**: Unified request handling across different framework formats
+- **Body Hashing**: SHA-256 hashing for quick equality checks and cache keys
+
+#### Collector Lifecycle Management
+
+- **State Manager**: Centralized collector state management preventing memory leaks
+- **Automatic Cleanup**: Discord.js native disposal with proper event listener cleanup
+- **Performance Monitoring**: Comprehensive collector performance metrics and insights
+- **Memory Pressure Detection**: Proactive cleanup under memory pressure conditions
+
+### Testing & Quality Assurance
+
+#### Comprehensive Test Suite
+
+Build / Test status:
+
+- ![build status](https://img.shields.io/badge/build-passing-brightgreen)
+- ![tests](https://img.shields.io/badge/tests-passing-brightgreen)
+- ![coverage](https://img.shields.io/badge/coverage-unknown-lightgrey)
+- **Unit Tests**: Operation validation, credential security, input sanitization, Discord validation
+- **Integration Tests**: V2 operations, collector lifecycle, network recovery, credential handling
+- **Compliance Tests**: Automated n8n V2 compliance validation
+- **Workflow Tests**: Real workflow JSON validation and structure testing
+
+#### Test Coverage Areas
+
+- Credential security and format validation
+- Input sanitization and XSS prevention
+- Discord snowflake validation
+- Webhook signature verification
+- Client manager lifecycle
+- Connection optimization
+- Message operations
+- Request caching
+- Collector performance
+- Network recovery and pool health management
+
+### Security Enhancements
+
+#### Input Validation & Sanitization
+
+- **XSS Prevention**: HTML entity encoding for user-generated content
+- **Command Injection**: Shell command character sanitization
+- **Path Traversal**: Path normalization and validation
+- **Snowflake Validation**: Discord.js SnowflakeUtil integration for ID validation
+- **Credential Validation**: Enhanced format checking for Discord tokens and IDs
+
+#### Webhook Security
+
+- **Signature Verification**: Proper Ed25519 webhook signature verification (continued from v0.7.6)
+- **Request Normalization**: Canonical body handling for consistent verification
+- **Replay Attack Prevention**: Timestamp validation in webhook requests
+
+### Architecture & Infrastructure
+
+#### Shared Utilities
+
+- **ID Generation**: Node.js crypto.randomUUID() replacing hexoid dependency
+- **Request Normalization**: Framework-agnostic request handling with caching
+- **Snowflake Utilities**: Discord.js built-in snowflake validation and decoding
+- **Type Helpers**: Centralized type conversion with n8n error integration
+
+#### Helper Systems
+
+- **HTTP Client**: n8n webhook execution and execution status polling (V1 compatibility)
+- **IPC Facade**: Type-safe IPC abstraction for V1 bot communication
+- **Collector Performance Monitor**: Advanced performance tracking with insights and recommendations
+- **Connection Integration**: V2 operation context with optimized client management
+
+#### WebSocket Management
+
+- **Health Metrics**: Connection status, latency, uptime, reconnect tracking
+- **Event Metrics**: Performance tracking for Discord.js events
+- **Event Optimizer**: Prevent duplicate listener registration with WeakSet tracking
+- **Automatic Reconnection**: Discord.js built-in reconnection with monitoring
+
+### Documentation
+
+#### Comprehensive Guides
+
+- **[V1 to V2 Migration Guide](docs/migration/v1-to-v2.md)**: Step-by-step migration from n8n V1 to V2 nodes
+  - Operation mapping tables
+  - Parameter name changes
+  - Code examples for each operation type
+  - Common pitfalls and solutions
+- **[V2 Architecture Visual Guide](docs/development/v2-architecture-visual-guide.md)**: ASCII diagrams showing message
+  flows and patterns
+  - Stateless message sending flow
+  - Interactive component response flow
+  - Complete interactive workflow examples
+  - Resource comparison (Message vs Prompt vs Trigger)
+  - Memory and performance comparison
+
+#### Developer Documentation
+
+- **[Architecture Documentation](docs/architecture.md)**: Complete architecture guide including built-ins first
+  approach, Discord.js v14 integration, design principles, best practices, and quality standards
+- **[Testing Documentation](docs/development/testing.md)**: Test structure, patterns, and coverage
+- **[API Documentation](docs/architecture.md#api-reference)**: Operation references, trigger configurations
+- **[V2 Operations Guide](docs/operations/v2-operations.md)**: Complete V2 operation reference
+- **[Webhook Security](docs/architecture.md#webhook-security)**: Ed25519 signature verification and security
+- **[Performance Guide](docs/architecture.md#performance-optimization)**: Optimization and monitoring strategies
+- **Workflow Examples**: JSON workflow files for common operations in `tests/integration/workflows/`
+
+### Type Safety & Developer Experience
+
+#### TypeScript Enhancements
+
+- **NodeMap Type**: Comprehensive type definitions for all V2 operations
+- **AllEntities Integration**: n8n's type-safe operation routing
+- **Trigger Type Definitions**: Type-safe trigger configuration interfaces
+- **Error Type Integration**: Proper n8n error types throughout
+
+#### Code Quality
+
+- **Type Helper Utilities**: Centralized type conversion with validation
+- **Minimal Casting**: Reduced `as unknown as` casts with helper functions
+- **Error Context**: Minimal INode objects for error reporting when needed
+- **JSDoc Comments**: Comprehensive inline documentation
+
+### Backward Compatibility
+
+#### V1 Node Support
+
+- **Full V1 Compatibility**: All existing V1 nodes continue to work unchanged
+- **No Breaking Changes**: Existing workflows remain functional
+- **Migration Path**: Optional upgrade to V2 nodes when ready
+- **IPC Support**: Maintained IPC communication for V1 bot operations
+
+### Infrastructure Improvements
+
+#### Build & Development
+
+- **Test Scripts**: Comprehensive test runner setup
+- **Compliance Testing**: Automated V2 compliance checks
+- **Workflow Validation**: JSON workflow structure validation
+- **Mock Utilities**: Reusable test mocks and helpers
+
+#### CI/CD
+
+- **Automated Testing**: All tests run on commit
+- **Coverage Reporting**: Test coverage tracking and reporting
+- **Linting**: ESLint compliance checks
+- **Type Checking**: TypeScript compilation validation
+
+### Known Limitations & Future Work
+
+#### Current Limitations
+
+- **Untested in Production**: Beta release has not been validated in real-world production environments
+- **Feature Incomplete**: More Discord triggers and operations planned
+- **API Evolution**: Parameters and interfaces may change based on feedback
+- **V1 Deprecation**: No timeline yet for V1 node deprecation
+
+#### Planned Features
+
+- Additional Discord trigger types
+- More action operations (mute, deafen, move members, etc.)
+- Enhanced embed support
+- Forum channel operations
+- Auto-moderation integration
+- Voice channel operations
+
+### Migration Notes
+
+#### For Existing Users (V1 Nodes)
+
+- **No Action Required**: V1 nodes continue to work exactly as before
+- **Optional Upgrade**: V2 nodes available for new workflows
+- **Performance Benefits**: V2 nodes offer better performance and resource management
+- **See Migration Guide**: Detailed guide available in `/docs/migration/v1-to-v2.md`
+
+#### For New Users
+
+- **Start with V2**: New workflows should use V2 nodes
+- **Better Performance**: V2 architecture offers improved efficiency
+- **Modern Patterns**: Follows n8n's latest best practices
+- **Future-Proof**: V2 is the path forward for n8n integrations
+
+### Dependencies
+
+#### No Dependency Changes
+
+- All dependencies remain the same as v0.7.6
+- discord.js: ^14.22.1
+- n8n-core: ^1.111.0
+- n8n-workflow: ^1.109.0
+- tweetnacl: ^1.0.3 (added in v0.7.6 for webhook security)
+
+### Breaking Changes
+
+**None** - This release is fully backward compatible with v0.7.6. All V1 nodes continue to work unchanged.
+
+### Feedback & Contributions
+
+This is a **beta release**. We welcome feedback on:
+
+- Production usage experiences and stability
+- Missing Discord features you'd like to see
+- API usability and developer experience
+- Performance in real-world scenarios
+- Documentation clarity and completeness
+
+Please report issues and provide feedback at: <https://github.com/kmcbride3/n8n-nodes-discord/issues>
+
+### Getting Started
+
+- **Quick Start**: See [FAQ](docs/FAQ.md) for common questions
+- **Migration**: Follow [V1 to V2 Migration Guide](docs/migration/v1-to-v2.md)
+- **Development**: Read [Getting Started Guide](docs/development/getting-started.md)
+- **Troubleshooting**: Check [Common Errors](docs/troubleshooting/common-errors.md)
+
+---
+
 ## Released (2025-09-21 0.7.6)
+
+### Security Fixes
+
+- **CRITICAL**: Fixed Ed25519 webhook signature verification vulnerability
+  - Implemented proper Ed25519 signature verification using tweetnacl
+  - Added tweetnacl dependency for secure cryptographic operations
+  - Previously, webhook requests were not properly verified, allowing potential spoofing attacks
+  - Added comprehensive test coverage for webhook security
 
 ### Improvements/refactoring
 
@@ -85,6 +358,12 @@
 - Enhanced Collection implementation with discord.js Collections
 - Updated dependencies to remove deprecated methods
 - Fixed object injection vulnerabilities
+- **Security Hardening**: Comprehensive security enhancements
+  - ReDoS protection with `safeRegexTest()` function and regex complexity checks
+  - SSRF prevention in URL validation blocking private networks
+  - Enhanced input validation and sanitization for all user inputs
+  - Improved credential security with format validation
+  - Rate limiting capabilities and content sanitization
 - Improved ESLint and Prettier compliance
 - Improved type safety in Discord client event handlers
 - Optimized channel state management for triggers
@@ -129,13 +408,16 @@
 ### New Features
 
 - Discord Trigger Node
-- **New trigger type:** Threads - start a workflow when a new thread is created. Supports all the same parameters as the _Message_ trigger.
-- **New trigger type:** Nicknames - start a workflow when a user's server nickname is updated. Supports all the same parameters as the _User Role_ trigger.
+- **New trigger type:** Threads - start a workflow when a new thread is created. Supports all the same parameters as the
+  _Message_ trigger.
+- **New trigger type:** Nicknames - start a workflow when a user's server nickname is updated. Supports all the same
+  parameters as the _User Role_ trigger.
 - Now listens and reacts to all trigger events from bots
 
 ### Improvements/refactoring
 
-- Added [Node Codex](https://docs.n8n.io/integrations/creating-nodes/build/reference/node-codex-files/)'s for both Discord Trigger and Discord Send.
+- Added [Node Codex](https://docs.n8n.io/integrations/creating-nodes/build/reference/node-codex-files/)'s for both
+  Discord Trigger and Discord Send.
 - Replaced `.eslintignore`, `.eslintrc`, and `.eslintrc.js` with new `eslint.config.mjs` flat file.
 - Added configuration file to support n8n's [nodelinter](https://github.com/n8n-io/nodelinter).
 - Removed unnecessary dependencies, updated all remaining ones to latest version
@@ -231,4 +513,5 @@
 
 ### Improvements/refactoring
 
-- Added base url field to Discord credentials, so there is no need to use env var and have conflict with different formats
+- Added base url field to Discord credentials, so there is no need to use env var and have conflict with different
+  formats

@@ -1,0 +1,31 @@
+{
+  "name": "Discord Webhook Send Test",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "webhook",
+        "operation": "send",
+        "webhookId": "123456789012345678",
+        "webhookToken": "test-webhook-token",
+        "content": "Test webhook message",
+        "username": "Test Bot",
+        "wait": true
+      },
+      "name": "Discord Send Webhook",
+      "type": "@kmcbride3/n8n-nodes-discord.discordV2",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "id": "test-webhook-send-node"
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "test-workflow-instance"
+  },
+  "pinData": {},
+  "versionId": "1"
+}

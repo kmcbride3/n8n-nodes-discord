@@ -30,6 +30,7 @@ export default [
       '**/lib',
       '**/package.json',
       '**/tsconfig.json',
+      '**/tests/**',
     ],
   },
   {
@@ -80,7 +81,36 @@ export default [
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
       semi: ['error', 'never'], // Enforce no semicolons
-      '@typescript-eslint/no-explicit-any': 'off', // Ensure this rule is disabled last
+      '@typescript-eslint/no-explicit-any': 'error', // Enforce no any types
+    },
+  },
+  {
+    files: ['**/*.md'],
+    // Use the markdown processor so code fences are extracted and linted
+    processor: 'markdown/markdown',
+    languageOptions: {
+      parserOptions: {
+        ecmaVersion: 2019,
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      prettier: prettierPlugin,
+      '@typescript-eslint': typescriptEslintPlugin,
+    },
+    rules: {
+      // Let Prettier validate markdown formatting; developers can run pnpm lint:format to auto-fix
+      'prettier/prettier': [
+        'error',
+        {
+          trailingComma: 'all',
+          tabWidth: 2,
+          semi: false,
+          singleQuote: true,
+          printWidth: 120,
+          endOfLine: 'auto',
+        },
+      ],
     },
   },
   {
@@ -114,6 +144,37 @@ export default [
       'n8n-nodes-base/node-execute-block-missing-continue-on-fail': 'off',
       'n8n-nodes-base/node-resource-description-filename-against-convention': 'off',
       'n8n-nodes-base/node-param-fixed-collection-type-unsorted-items': 'off',
+    },
+  },
+  // Lint JavaScript code fences inside Markdown files
+  {
+    files: ['**/*.md/*.js'],
+    languageOptions: {
+      ecmaVersion: 2019,
+      sourceType: 'module',
+    },
+    plugins: {
+      prettier: prettierPlugin,
+    },
+    rules: {
+      'no-console': 'warn',
+    },
+  },
+  // Lint TypeScript code fences inside Markdown files
+  {
+    files: ['**/*.md/*.ts'],
+    languageOptions: {
+      parser: typescriptEslintParser,
+      parserOptions: {
+        project: ['./tsconfig.json'],
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescriptEslintPlugin,
+      prettier: prettierPlugin,
+    },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
   eslintConfigPrettier,
