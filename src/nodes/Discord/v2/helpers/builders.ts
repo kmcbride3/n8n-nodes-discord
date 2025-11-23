@@ -15,14 +15,16 @@ import {
   type MessageActionRowComponentBuilder,
   StringSelectMenuBuilder,
 } from 'discord.js'
-import type { IDataObject, IExecuteFunctions } from 'n8n-workflow'
+import type { IDataObject } from 'n8n-workflow'
 
-import { validateColorHex } from '../../helpers'
 import { toAPISelectMenuOptions, toIDataObject, toMessageActionRowComponents } from './type-helpers'
 import type { IDiscordFile } from './types'
 
 // Re-export Discord.js enums for convenience
 export { ButtonStyle } from 'discord.js'
+
+// Re-export enhanced embed builder
+export { buildEnhancedEmbed, getEnhancedEmbedProperties, EMBED_LIMITS } from './embedBuilder'
 
 /**
  * Creates a Discord button component using Discord.js ButtonBuilder
@@ -156,86 +158,3 @@ export function prepareFile(fileName: string, fileData: Buffer | string, content
   }
 }
 
-/**
- * Builds Discord embed configuration from node parameters
- *
- * Extracts and validates embed parameters from n8n node execution context. Supports
- * all Discord embed features: title, description, color, fields, author, footer,
- * images, and timestamps. Uses Discord.js validation patterns for color codes.
- * Returns undefined if no embed content is configured.
- *
- * @param context - The n8n execution context
- * @param itemIndex - The index of the current item being processed
- * @returns Embed configuration object or undefined if embed is not enabled/empty
- *
- * @example
- * const embed = buildEmbedConfig(this, 0);
- * if (embed) {
- *   // Send message with embed
- * }
- */
-export function buildEmbedConfig(context: IExecuteFunctions, itemIndex: number): IDataObject | undefined {
-  const embedEnabled = context.getNodeParameter('embed', itemIndex, false) as boolean
-  if (!embedEnabled) return undefined
-
-  const title = context.getNodeParameter('title', itemIndex, '') as string
-  const description = context.getNodeParameter('description', itemIndex, '') as string
-  const color = context.getNodeParameter('color', itemIndex, '#0099ff') as string
-  const url = context.getNodeParameter('url', itemIndex, '') as string
-  const imageUrl = context.getNodeParameter('imageUrl', itemIndex, '') as string
-  const thumbnailUrl = context.getNodeParameter('thumbnailUrl', itemIndex, '') as string
-  const authorName = context.getNodeParameter('authorName', itemIndex, '') as string
-  const authorIconUrl = context.getNodeParameter('authorIconUrl', itemIndex, '') as string
-  const authorUrl = context.getNodeParameter('authorUrl', itemIndex, '') as string
-  const footerText = context.getNodeParameter('footerText', itemIndex, '') as string
-  const footerIconUrl = context.getNodeParameter('footerIconUrl', itemIndex, '') as string
-  const timestamp = context.getNodeParameter('timestamp', itemIndex, '') as string
-  const fields = context.getNodeParameter('fields', itemIndex, { field: [] }) as {
-    field?: Array<{ name: string; value: string; inline?: boolean }>
-  }
-
-  if (!(title || description || authorName || footerText || fields.field?.length)) return undefined
-
-  const embed: IDataObject = {
-    title: title || undefined,
-    description: description || undefined,
-    color: color ? validateColorHex(color) : 0x0099ff,
-    url: url || undefined,
-  }
-
-  if (imageUrl) embed.image = { url: imageUrl }
-  if (thumbnailUrl) embed.thumbnail = { url: thumbnailUrl }
-
-  if (authorName) {
-    embed.author = {
-      name: authorName,
-      icon_url: authorIconUrl || undefined,
-      url: authorUrl || undefined,
-    }
-  }
-
-  if (footerText) {
-    embed.footer = {
-      text: footerText,
-      icon_url: footerIconUrl || undefined,
-    }
-  }
-
-  if (timestamp) {
-    embed.timestamp = timestamp
-  } else if (embedEnabled) {
-    embed.timestamp = new Date().toISOString()
-  }
-
-  // Transform n8n field input format to Discord embed field format
-  // Each field can be displayed inline (side-by-side) or full-width (inline: false)
-  if (fields.field?.length) {
-    embed.fields = fields.field.map((field) => ({
-      name: field.name,
-      value: field.value,
-      inline: field.inline || false,
-    }))
-  }
-
-  return embed
-}

@@ -9,12 +9,12 @@
  */
 
 import { ButtonStyle, DiscordAPIError, HTTPError, RateLimitError } from 'discord.js'
-import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
+import type { IDataObject, IExecuteFunctions, INodeExecutionData, INodeProperties } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
 import { generateUniqueId } from '../../../helpers'
 import { isValidSnowflake, sendChannelMessage } from '../../helpers'
-import { buildEmbedConfig, createActionRow, createButtonComponent } from '../../helpers/builders'
+import { buildEnhancedEmbed, createActionRow, createButtonComponent, getEnhancedEmbedProperties } from '../../helpers/builders'
 import { parseDiscordError, prepareErrorData, updateDisplayOptions } from '../../helpers/utils'
 
 /**
@@ -203,238 +203,17 @@ export const properties = updateDisplayOptions(
       default: '',
       description: 'The text content of the message to send.',
     },
-    {
-      displayName: 'Embed',
-      name: 'embed',
-      type: 'boolean',
+    // Enhanced embed properties with full Discord.js support
+    ...getEnhancedEmbedProperties().map((prop): INodeProperties => ({
+      ...prop,
       displayOptions: {
         show: {
           resource: ['message'],
           operation: ['send'],
+          ...((prop.displayOptions as any)?.show || {}),
         },
       },
-      required: false,
-      default: false,
-      description: 'If active it will enable the creation of rich messages.',
-    },
-    {
-      displayName: 'Title',
-      name: 'title',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '',
-      description: 'The title of the embed.',
-    },
-    {
-      displayName: 'Description',
-      name: 'description',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      typeOptions: {
-        rows: 4,
-      },
-      default: '',
-      description: 'The description of the embed.',
-    },
-    {
-      displayName: 'Color',
-      name: 'color',
-      type: 'color',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '#0099ff',
-      description: 'The accent color of the embed sidebar (hex color code, e.g., #FF5733 for orange-red).',
-    },
-    {
-      displayName: 'URL',
-      name: 'url',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '',
-      description: 'URL for the embed title to link to.',
-    },
-    {
-      displayName: 'Image URL',
-      name: 'imageUrl',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '',
-      description:
-        'URL of an image to display in the embed (e.g., https://example.com/image.png). Supports PNG, JPG, GIF.',
-    },
-    {
-      displayName: 'Thumbnail URL',
-      name: 'thumbnailUrl',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '',
-      description: 'URL of a thumbnail image to display in the embed.',
-    },
-    {
-      displayName: 'Author Name',
-      name: 'authorName',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '',
-      description: 'Name of the embed author.',
-    },
-    {
-      displayName: 'Author Icon URL',
-      name: 'authorIconUrl',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '',
-      description: 'URL of the author icon.',
-    },
-    {
-      displayName: 'Author URL',
-      name: 'authorUrl',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '',
-      description: 'URL for the author name to link to.',
-    },
-    {
-      displayName: 'Footer Text',
-      name: 'footerText',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '',
-      description: 'Text for the embed footer.',
-    },
-    {
-      displayName: 'Footer Icon URL',
-      name: 'footerIconUrl',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '',
-      description: 'URL of the footer icon.',
-    },
-    {
-      displayName: 'Timestamp',
-      name: 'timestamp',
-      type: 'string',
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: '',
-      description: 'ISO 8601 timestamp for the embed (e.g., 2023-01-01T00:00:00Z). Leave empty for current time.',
-    },
-    {
-      displayName: 'Fields',
-      name: 'fields',
-      placeholder: 'Add Field',
-      type: 'fixedCollection',
-      typeOptions: {
-        multipleValues: true,
-      },
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          embed: [true],
-        },
-      },
-      default: {},
-      options: [
-        {
-          name: 'field',
-          displayName: 'Field',
-          values: [
-            {
-              displayName: 'Name',
-              name: 'name',
-              type: 'string',
-              default: '',
-              description: 'The name/title of the field.',
-            },
-            {
-              displayName: 'Value',
-              name: 'value',
-              type: 'string',
-              default: '',
-              description: 'The value/content of the field.',
-            },
-            {
-              displayName: 'Inline',
-              name: 'inline',
-              type: 'boolean',
-              default: false,
-              description: 'Whether this field should be displayed inline with other fields.',
-            },
-          ],
-        },
-      ],
-    },
+    })),
     {
       displayName: 'Mention Roles',
       name: 'mentionRoles',
@@ -714,8 +493,8 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
         throw new NodeOperationError(this.getNode(), `Invalid channel ID: ${channelId}`, { itemIndex })
       }
 
-      // Prepare embeds using existing helper function
-      const embed = buildEmbedConfig(this, itemIndex)
+      // Prepare embeds using enhanced embed builder
+      const embed = buildEnhancedEmbed(this, itemIndex)
       const embeds = embed ? [embed] : undefined
 
       // Prepare allowed mentions using existing helper

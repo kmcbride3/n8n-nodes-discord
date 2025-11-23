@@ -204,19 +204,68 @@ jest.mock('discord.js', () => ({
     GuildMember: 4,
   },
   Collection: Map,
-  EmbedBuilder: jest.fn().mockImplementation(() => ({
-    setTitle: jest.fn().mockReturnThis(),
-    setDescription: jest.fn().mockReturnThis(),
-    setColor: jest.fn().mockReturnThis(),
-    addFields: jest.fn().mockReturnThis(),
-    setFooter: jest.fn().mockReturnThis(),
-    setTimestamp: jest.fn().mockReturnThis(),
-    toJSON: jest.fn().mockReturnValue({
-      title: 'Test Embed',
-      description: 'Test Description',
-      color: 0x0099ff,
-    }),
-  })),
+  EmbedBuilder: jest.fn().mockImplementation(() => {
+    const embed: Record<string, unknown> = {}
+    
+    return {
+      setTitle: jest.fn().mockImplementation(function (this: any, title: string) {
+        embed.title = title
+        return this
+      }),
+      setDescription: jest.fn().mockImplementation(function (this: any, description: string) {
+        embed.description = description
+        return this
+      }),
+      setURL: jest.fn().mockImplementation(function (this: any, url: string) {
+        embed.url = url
+        return this
+      }),
+      setColor: jest.fn().mockImplementation(function (this: any, color: number) {
+        embed.color = color
+        return this
+      }),
+      setAuthor: jest.fn().mockImplementation(function (this: any, author: any) {
+        // Convert Discord.js format (iconURL) to API format (icon_url)
+        embed.author = {
+          ...author,
+          icon_url: author.iconURL,
+          iconURL: undefined,
+        }
+        delete (embed.author as any).iconURL
+        return this
+      }),
+      setThumbnail: jest.fn().mockImplementation(function (this: any, url: string) {
+        embed.thumbnail = { url }
+        return this
+      }),
+      setImage: jest.fn().mockImplementation(function (this: any, url: string) {
+        embed.image = { url }
+        return this
+      }),
+      setFooter: jest.fn().mockImplementation(function (this: any, footer: any) {
+        // Convert Discord.js format (iconURL) to API format (icon_url)
+        embed.footer = {
+          ...footer,
+          icon_url: footer.iconURL,
+          iconURL: undefined,
+        }
+        delete (embed.footer as any).iconURL
+        return this
+      }),
+      setTimestamp: jest.fn().mockImplementation(function (this: any, timestamp?: Date | number | string) {
+        embed.timestamp = timestamp ? new Date(timestamp).toISOString() : new Date().toISOString()
+        return this
+      }),
+      addFields: jest.fn().mockImplementation(function (this: any, ...fields: any[]) {
+        if (!embed.fields) embed.fields = []
+        ;(embed.fields as any[]).push(...fields)
+        return this
+      }),
+      toJSON: jest.fn().mockImplementation(() => {
+        return Object.keys(embed).length > 0 ? { ...embed } : undefined
+      }),
+    }
+  }),
   ActionRowBuilder: jest.fn().mockImplementation(() => ({
     addComponents: jest.fn().mockReturnThis(),
     setComponents: jest.fn().mockReturnThis(),
