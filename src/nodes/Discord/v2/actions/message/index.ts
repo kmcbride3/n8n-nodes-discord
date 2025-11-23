@@ -1,15 +1,25 @@
 import type { INodeProperties } from 'n8n-workflow'
 
-import {
-  execute as bulkDeleteMessagesExecute,
-  properties as bulkDeleteMessagesProperties,
-} from './bulkDeleteMessages.operation'
-import { execute as deleteMessageExecute, properties as deleteMessageProperties } from './deleteMessage.operation'
-import { execute as sendMessageExecute, properties as sendMessageProperties } from './sendMessage.operation'
+import * as bulkDeleteMessagesOp from './bulkDeleteMessages.operation'
+import * as deleteMessageOp from './deleteMessage.operation'
+import * as sendMessageOp from './sendMessage.operation'
+import * as getMessageOp from './getMessage.operation'
+import * as getMessagesOp from './getMessages.operation'
+import * as getPinnedMessagesOp from './getPinnedMessages.operation'
+import * as getReactionsOp from './getReactions.operation'
+import * as searchMessagesOp from './searchMessages.operation'
 
-export const bulkDeleteMessages = { execute: bulkDeleteMessagesExecute, properties: bulkDeleteMessagesProperties }
-export const deleteMessage = { execute: deleteMessageExecute, properties: deleteMessageProperties }
-export const sendMessage = { execute: sendMessageExecute, properties: sendMessageProperties }
+// Write operations
+export const bulkDeleteMessages = { execute: bulkDeleteMessagesOp.execute, properties: bulkDeleteMessagesOp.properties }
+export const deleteMessage = { execute: deleteMessageOp.execute, properties: deleteMessageOp.properties }
+export const sendMessage = { execute: sendMessageOp.execute, properties: sendMessageOp.properties }
+
+// Read operations
+export const getMessage = { execute: getMessageOp.execute, properties: getMessageOp.properties }
+export const getMessages = { execute: getMessagesOp.execute, properties: getMessagesOp.properties }
+export const getPinnedMessages = { execute: getPinnedMessagesOp.execute, properties: getPinnedMessagesOp.properties }
+export const getReactions = { execute: getReactionsOp.execute, properties: getReactionsOp.properties }
+export const searchMessages = { execute: searchMessagesOp.execute, properties: searchMessagesOp.properties }
 
 export const description: INodeProperties[] = [
   {
@@ -44,7 +54,7 @@ export const description: INodeProperties[] = [
     ],
     default: 'send',
   },
-  ...sendMessageProperties,
-  ...deleteMessageProperties,
-  ...bulkDeleteMessagesProperties,
+  ...sendMessageOp.properties,
+  ...deleteMessageOp.properties,
+  ...bulkDeleteMessagesOp.properties,
 ]

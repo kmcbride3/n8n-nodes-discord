@@ -6,12 +6,13 @@
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
-import * as channel from './channel'
-import * as event from './event'
-import * as guild from './guild'
-import * as message from './message'
-import * as role from './role'
-import * as user from './user'
+import * as channel from '../channel'
+import * as event from '../event'
+import * as guild from '../guild'
+import * as member from '../member'
+import * as message from '../message'
+import * as role from '../role'
+import * as user from '../user'
 
 export async function router(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
   const resource = this.getNodeParameter('resource', 0) as string
@@ -102,15 +103,15 @@ export async function router(this: IExecuteFunctions): Promise<INodeExecutionDat
     case 'user':
       switch (operation) {
         case 'getMember':
-          return user.getMember.execute.call(this)
+          return member.getMember.execute.call(this)
         case 'getMemberRoles':
-          return user.getMemberRoles.execute.call(this)
+          return member.getMemberRoles.execute.call(this)
         case 'getUser':
           return user.getUser.execute.call(this)
         case 'listMembers':
-          return user.listMembers.execute.call(this)
+          return member.listMembers.execute.call(this)
         case 'searchMembers':
-          return user.searchMembers.execute.call(this)
+          return member.searchMembers.execute.call(this)
         default:
           throw new NodeOperationError(this.getNode(), `Unknown operation '${operation}' for resource '${resource}'`)
       }

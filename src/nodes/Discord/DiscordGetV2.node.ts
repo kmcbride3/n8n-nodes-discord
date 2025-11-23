@@ -6,12 +6,6 @@
 import type { IExecuteFunctions, INodeExecutionData, INodeType, INodeTypeDescription } from 'n8n-workflow'
 
 import * as get from './v2/actions/get'
-import * as channel from './v2/actions/get/channel'
-import * as event from './v2/actions/get/event'
-import * as guild from './v2/actions/get/guild'
-import * as message from './v2/actions/get/message'
-import * as role from './v2/actions/get/role'
-import * as user from './v2/actions/get/user'
 
 export class DiscordGetV2 implements INodeType {
   description: INodeTypeDescription = {
@@ -65,42 +59,7 @@ export class DiscordGetV2 implements INodeType {
         default: 'botToken',
       },
       ...get.getProperties,
-      // Channel operations
-      ...channel.getChannel.properties,
-      ...channel.getPermissions.properties,
-      ...channel.getThreadMembers.properties,
-      ...channel.listThreads.properties,
-      ...channel.listWebhooks.properties,
-      // Event operations
-      ...event.getEvent.properties,
-      ...event.getEventUsers.properties,
-      ...event.listEvents.properties,
-      // Guild operations
-      ...guild.getAuditLog.properties,
-      ...guild.getGuild.properties,
-      ...guild.listBans.properties,
-      ...guild.listChannels.properties,
-      ...guild.listEmojis.properties,
-      ...guild.listInvites.properties,
-      ...guild.listRoles.properties,
-      ...guild.listWebhooks.properties,
-      // Message operations
-      ...message.getMessage.properties,
-      ...message.getMessages.properties,
-      ...message.getPinnedMessages.properties,
-      ...message.getReactions.properties,
-      ...message.searchMessages.properties,
-      // Role operations
-      ...role.getRole.properties,
-      ...role.getRoleMembers.properties,
-      ...role.getRolePermissions.properties,
-      ...role.listRoles.properties,
-      // User operations
-      ...user.getMember.properties,
-      ...user.getMemberRoles.properties,
-      ...user.getUser.properties,
-      ...user.listMembers.properties,
-      ...user.searchMembers.properties,
+      ...get.description,
     ],
   }
 

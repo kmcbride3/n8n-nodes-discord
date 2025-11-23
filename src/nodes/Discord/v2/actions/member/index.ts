@@ -1,16 +1,27 @@
 import type { INodeProperties } from 'n8n-workflow'
 
-import { execute as addRoleExecute, properties as addRoleProperties } from './addRole.operation'
-import { execute as banUserExecute, properties as banUserProperties } from './banUser.operation'
-import { execute as kickUserExecute, properties as kickUserProperties } from './kickUser.operation'
-import { execute as removeRoleExecute, properties as removeRoleProperties } from './removeRole.operation'
-import { execute as timeoutUserExecute, properties as timeoutUserProperties } from './timeoutUser.operation'
+import * as addRoleOp from './addRole.operation'
+import * as banUserOp from './banUser.operation'
+import * as kickUserOp from './kickUser.operation'
+import * as removeRoleOp from './removeRole.operation'
+import * as timeoutUserOp from './timeoutUser.operation'
+import * as getMemberOp from './getMember.operation'
+import * as getMemberRolesOp from './getMemberRoles.operation'
+import * as listMembersOp from './listMembers.operation'
+import * as searchMembersOp from './searchMembers.operation'
 
-export const addRole = { execute: addRoleExecute, properties: addRoleProperties }
-export const banUser = { execute: banUserExecute, properties: banUserProperties }
-export const kickUser = { execute: kickUserExecute, properties: kickUserProperties }
-export const removeRole = { execute: removeRoleExecute, properties: removeRoleProperties }
-export const timeoutUser = { execute: timeoutUserExecute, properties: timeoutUserProperties }
+// Write operations
+export const addRole = { execute: addRoleOp.execute, properties: addRoleOp.properties }
+export const banUser = { execute: banUserOp.execute, properties: banUserOp.properties }
+export const kickUser = { execute: kickUserOp.execute, properties: kickUserOp.properties }
+export const removeRole = { execute: removeRoleOp.execute, properties: removeRoleOp.properties }
+export const timeoutUser = { execute: timeoutUserOp.execute, properties: timeoutUserOp.properties }
+
+// Read operations
+export const getMember = { execute: getMemberOp.execute, properties: getMemberOp.properties }
+export const getMemberRoles = { execute: getMemberRolesOp.execute, properties: getMemberRolesOp.properties }
+export const listMembers = { execute: listMembersOp.execute, properties: listMembersOp.properties }
+export const searchMembers = { execute: searchMembersOp.execute, properties: searchMembersOp.properties }
 
 export const description: INodeProperties[] = [
   {
