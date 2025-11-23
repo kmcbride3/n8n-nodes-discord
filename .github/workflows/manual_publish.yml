@@ -1,9 +1,25 @@
 name: Publish to NPM
-on: workflow_dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Perform a dry run (no actual publish)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
 
 jobs:
-  cache-and-install:
+  publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout
@@ -17,7 +33,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -32,8 +48,20 @@ jobs:
       - name: Verify build output
         run: ls -la dist/
 
-      - uses: JS-DevTools/npm-publish@v4
+      - name: Check package.json
+        run: |
+          echo "Package name: $(node -p 'require("./package.json").name')"
+          echo "Package version: $(node -p 'require("./package.json").version')"
+
+      - name: Publish to NPM
+        if: ${{ inputs.dry-run != 'true' }}
+        uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
           access: public
-          tag: latest
+      
+      - name: Dry run - Skip publish
+        if: ${{ inputs.dry-run == 'true' }}
+        run: |
+          echo "Dry run mode - would publish package"
+          npm pack --dry-run
