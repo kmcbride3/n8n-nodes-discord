@@ -27,12 +27,18 @@
  * @module v2/actions/message/bulkDeleteMessages
  */
 
+import type { Client } from 'discord.js'
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
 import { DiscordLimits, DiscordValidation } from '../../../shared'
-import { bulkDeleteMessages, getChannelMessages } from '../../helpers'
-import { parseDiscordError, updateDisplayOptions } from '../../helpers/utils'
+import type { IV2DiscordCredentials } from '../../helpers'
+import {
+  bulkDeleteMessages,
+  executeV2OperationWithClient,
+  getChannelMessages,
+  updateDisplayOptions,
+} from '../../helpers'
 
 export const properties = updateDisplayOptions(
   {
@@ -94,113 +100,91 @@ export const properties = updateDisplayOptions(
  * const result = await execute.call(this);
  * // Returns: [[{ json: { success: true, deletedCount: 50, channelId: '123' }, pairedItem: { item: 0 } }]]
  */
+interface IBulkDeleteCredentials extends IV2DiscordCredentials {
+  client: Client
+}
+
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-  const returnData: INodeExecutionData[] = []
-  const items: INodeExecutionData[] = this.getInputData()
+  return executeV2OperationWithClient<IBulkDeleteCredentials>(this, {
+    getCredentials: async (ctx) => {
+      const { createV2DiscordClient, getV2DiscordCredentials } = await import('../../helpers')
+      const credentials = await getV2DiscordCredentials.call(ctx)
+      const client = await createV2DiscordClient.call(ctx, credentials)
 
-  // CRITICAL: Create Discord client for message operations
-  const { createV2DiscordClient, getV2DiscordCredentials, releaseV2DiscordClientByInstance } = await import(
-    '../../helpers'
-  )
+      if (!client) {
+        throw new NodeOperationError(ctx.getNode(), 'Discord client is required for bulk delete operations')
+      }
 
-  const credentials = await getV2DiscordCredentials.call(this)
-  const client = await createV2DiscordClient.call(this, credentials)
+      return { ...credentials, client }
+    },
+    operation: async (ctx, { client }, itemIndex) => {
+      const channelId = ctx.getNodeParameter('channelId', itemIndex) as string
+      const removeMessagesNumber = ctx.getNodeParameter('removeMessagesNumber', itemIndex) as number
+      const reason = ctx.getNodeParameter('reason', itemIndex, '') as string
 
-  if (!client) {
-    throw new NodeOperationError(this.getNode(), 'Discord client is required for bulk delete operations')
-  }
+      // Validate using consolidated Discord.js validation and constants
+      DiscordValidation.snowflake(channelId, 'Channel ID', ctx.getNode())
 
-  try {
-    for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-      const channelId = this.getNodeParameter('channelId', itemIndex) as string
-      const removeMessagesNumber = this.getNodeParameter('removeMessagesNumber', itemIndex) as number
-      const reason = this.getNodeParameter('reason', itemIndex, '') as string
-
-      try {
-        // Validate using consolidated Discord.js validation and constants
-        DiscordValidation.snowflake(channelId, 'Channel ID', this.getNode())
-
-        if (removeMessagesNumber <= 0 || removeMessagesNumber > DiscordLimits.MESSAGE_BULK_DELETE_MAX) {
-          throw new NodeOperationError(
-            this.getNode(),
-            `Number of messages to delete must be between 1 and ${DiscordLimits.MESSAGE_BULK_DELETE_MAX}`,
-            { itemIndex },
-          )
-        }
-
-        if (reason) {
-          DiscordValidation.auditLogReason(reason, this.getNode())
-        }
-
-        // Get messages to delete
-        const messages = await getChannelMessages.call(
-          this,
-          channelId,
-          removeMessagesNumber,
-          undefined,
-          undefined,
-          undefined,
-          client,
+      if (removeMessagesNumber <= 0 || removeMessagesNumber > DiscordLimits.MESSAGE_BULK_DELETE_MAX) {
+        throw new NodeOperationError(
+          ctx.getNode(),
+          `Number of messages to delete must be between 1 and ${DiscordLimits.MESSAGE_BULK_DELETE_MAX}`,
+          { itemIndex },
         )
+      }
 
-        if (messages.length === 0) {
-          returnData.push({
-            json: {
-              success: true,
-              channelId,
-              messagesDeleted: 0,
-              message: 'No messages found to delete',
-              action: 'removeMessages',
-              timestamp: new Date().toISOString(),
-            },
-            pairedItem: { item: itemIndex },
-          })
-          continue
-        }
+      if (reason) {
+        DiscordValidation.auditLogReason(reason, ctx.getNode())
+      }
 
-        // Extract message IDs
-        const messageIds = messages.map((msg) => (msg as { id: string }).id)
+      // Get messages to delete
+      const messages = await getChannelMessages.call(
+        ctx,
+        channelId,
+        removeMessagesNumber,
+        undefined,
+        undefined,
+        undefined,
+        client,
+      )
 
-        // Bulk delete messages
-        await bulkDeleteMessages.call(this, channelId, messageIds, reason || undefined, client)
-
-        returnData.push({
+      if (messages.length === 0) {
+        return {
           json: {
             success: true,
             channelId,
-            messagesDeleted: messageIds.length,
-            requestedCount: removeMessagesNumber,
-            actuallyDeleted: messageIds.length,
-            reason: reason || undefined,
+            messagesDeleted: 0,
+            message: 'No messages found to delete',
             action: 'removeMessages',
             timestamp: new Date().toISOString(),
           },
           pairedItem: { item: itemIndex },
-        })
-      } catch (error) {
-        if (this.continueOnFail()) {
-          returnData.push({
-            json: {
-              success: false,
-              error: error instanceof Error ? error.message : String(error),
-              channelId,
-              requestedCount: removeMessagesNumber,
-              action: 'removeMessages',
-              timestamp: new Date().toISOString(),
-            },
-            pairedItem: { item: itemIndex },
-          })
-        } else {
-          throw parseDiscordError.call(this, error, itemIndex)
         }
       }
-    }
 
-    return [returnData]
-  } finally {
-    // Release Discord client back to the pool
-    if (client) {
+      // Extract message IDs
+      const messageIds = messages.map((msg) => (msg as { id: string }).id)
+
+      // Bulk delete messages
+      await bulkDeleteMessages.call(ctx, channelId, messageIds, reason || undefined, client)
+
+      return {
+        json: {
+          success: true,
+          channelId,
+          messagesDeleted: messageIds.length,
+          requestedCount: removeMessagesNumber,
+          actuallyDeleted: messageIds.length,
+          reason: reason || undefined,
+          action: 'removeMessages',
+          timestamp: new Date().toISOString(),
+        },
+        pairedItem: { item: itemIndex },
+      }
+    },
+    cleanup: async (ctx, { client }) => {
+      const { releaseV2DiscordClientByInstance } = await import('../../helpers')
       await releaseV2DiscordClientByInstance(client)
-    }
-  }
+    },
+  })
 }

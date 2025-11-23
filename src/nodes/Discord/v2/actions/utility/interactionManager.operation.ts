@@ -1,7 +1,6 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
 
-import { discordStateManager } from '../../helpers'
-import { updateDisplayOptions } from '../../helpers/utils'
+import { discordStateManager, executeV2Operation, updateDisplayOptions } from '../../helpers'
 
 export const properties = updateDisplayOptions(
   {
@@ -67,98 +66,99 @@ export const properties = updateDisplayOptions(
   ],
 )
 
+interface IInteractionManagerCredentials {
+  noCredentials: true
+}
+
 /**
  * Manages Discord interaction collectors and state
  * @param this - n8n execution context
  * @returns Promise resolving to execution data array
  */
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-  const returnData: INodeExecutionData[] = []
-  const items: INodeExecutionData[] = this.getInputData()
+  return executeV2Operation<IInteractionManagerCredentials>(this, {
+    getCredentials: async () => ({ noCredentials: true as const }),
+    operation: async (context, _credentials, itemIndex) => {
+      const subOperation = context.getNodeParameter('subOperation', itemIndex) as string
 
-  for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-    const subOperation = this.getNodeParameter('subOperation', itemIndex) as string
+      let resultData: IDataObject = {}
 
-    let resultData: IDataObject = {}
+      switch (subOperation) {
+        case 'getPending': {
+          const workflowIdFilter = context.getNodeParameter('workflowIdFilter', itemIndex) as string
+          const pendingInteractions = discordStateManager.getPendingInteractions(workflowIdFilter || undefined)
 
-    switch (subOperation) {
-      case 'getPending': {
-        const workflowIdFilter = this.getNodeParameter('workflowIdFilter', itemIndex) as string
-        const pendingInteractions = discordStateManager.getPendingInteractions(workflowIdFilter || undefined)
-
-        resultData = {
-          operation: 'getPending',
-          workflowIdFilter: workflowIdFilter || null,
-          totalInteractions: pendingInteractions.length,
-          interactions: pendingInteractions,
-          timestamp: new Date().toISOString(),
+          resultData = {
+            operation: 'getPending',
+            workflowIdFilter: workflowIdFilter || null,
+            totalInteractions: pendingInteractions.length,
+            interactions: pendingInteractions,
+            timestamp: new Date().toISOString(),
+          }
+          break
         }
-        break
+
+        case 'getStats': {
+          const stats = discordStateManager.getStats()
+
+          resultData = {
+            operation: 'getStats',
+            stats,
+            timestamp: new Date().toISOString(),
+          }
+          break
+        }
+
+        case 'getCollectors': {
+          const activeCollectors = discordStateManager.getActiveCollectors()
+          const collectorsData = Array.from(activeCollectors.entries()).map(([messageId, state]) => ({
+            messageId,
+            persistent: state.persistent,
+            timeout: state.timeout,
+            workflowId: state.workflowId,
+            componentCount: state.components.length,
+            collectorActive: !!state.collector,
+          }))
+
+          resultData = {
+            operation: 'getCollectors',
+            totalCollectors: activeCollectors.size,
+            collectors: collectorsData,
+            timestamp: new Date().toISOString(),
+          }
+          break
+        }
+
+        case 'cleanup': {
+          const maxAgeMinutes = context.getNodeParameter('maxAgeMinutes', itemIndex) as number
+          const maxAgeMs = maxAgeMinutes * 60 * 1000
+
+          const statsBefore = discordStateManager.getStats()
+          discordStateManager.cleanupExpiredInteractions(maxAgeMs)
+          const statsAfter = discordStateManager.getStats()
+
+          resultData = {
+            operation: 'cleanup',
+            maxAgeMinutes,
+            statsBefore,
+            statsAfter,
+            interactionsRemoved: statsBefore.pendingInteractions - statsAfter.pendingInteractions,
+            triggersRemoved: statsBefore.workflowTriggers - statsAfter.workflowTriggers,
+            timestamp: new Date().toISOString(),
+          }
+          break
+        }
+
+        default:
+          resultData = {
+            error: `Unknown sub-operation: ${subOperation}`,
+            timestamp: new Date().toISOString(),
+          }
       }
 
-      case 'getStats': {
-        const stats = discordStateManager.getStats()
-
-        resultData = {
-          operation: 'getStats',
-          stats,
-          timestamp: new Date().toISOString(),
-        }
-        break
+      return {
+        json: resultData,
       }
-
-      case 'getCollectors': {
-        const activeCollectors = discordStateManager.getActiveCollectors()
-        const collectorsData = Array.from(activeCollectors.entries()).map(([messageId, state]) => ({
-          messageId,
-          persistent: state.persistent,
-          timeout: state.timeout,
-          workflowId: state.workflowId,
-          componentCount: state.components.length,
-          collectorActive: !!state.collector,
-        }))
-
-        resultData = {
-          operation: 'getCollectors',
-          totalCollectors: activeCollectors.size,
-          collectors: collectorsData,
-          timestamp: new Date().toISOString(),
-        }
-        break
-      }
-
-      case 'cleanup': {
-        const maxAgeMinutes = this.getNodeParameter('maxAgeMinutes', itemIndex) as number
-        const maxAgeMs = maxAgeMinutes * 60 * 1000
-
-        const statsBefore = discordStateManager.getStats()
-        discordStateManager.cleanupExpiredInteractions(maxAgeMs)
-        const statsAfter = discordStateManager.getStats()
-
-        resultData = {
-          operation: 'cleanup',
-          maxAgeMinutes,
-          statsBefore,
-          statsAfter,
-          interactionsRemoved: statsBefore.pendingInteractions - statsAfter.pendingInteractions,
-          triggersRemoved: statsBefore.workflowTriggers - statsAfter.workflowTriggers,
-          timestamp: new Date().toISOString(),
-        }
-        break
-      }
-
-      default:
-        resultData = {
-          error: `Unknown sub-operation: ${subOperation}`,
-          timestamp: new Date().toISOString(),
-        }
-    }
-
-    returnData.push({
-      json: resultData,
-      pairedItem: { item: itemIndex },
-    })
-  }
-
-  return [returnData]
+    },
+  })
 }

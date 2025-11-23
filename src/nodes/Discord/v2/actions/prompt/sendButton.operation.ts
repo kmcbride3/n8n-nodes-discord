@@ -14,19 +14,19 @@
  * centrally and cleaned up automatically.
  */
 
-import type { MessageComponentInteraction } from 'discord.js'
+import type { Client, MessageComponentInteraction } from 'discord.js'
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
 import { LoggerProxy, NodeOperationError } from 'n8n-workflow'
 
+import type { IV2DiscordCredentials } from '../../helpers'
 import {
-  createV2DiscordClient,
   discordStateManager,
-  getV2DiscordCredentials,
-  releaseV2DiscordClientByInstance,
+  executeV2OperationWithClient,
   sendChannelMessage,
+  updateDisplayOptions,
 } from '../../helpers'
+import { buildFileAttachments, getFileAttachmentProperty } from '../../helpers/file-attachments'
 import { createActionRow, createButtonComponent } from '../../helpers/builders'
-import { updateDisplayOptions } from '../../helpers/utils'
 
 export const properties = updateDisplayOptions(
   {
@@ -153,10 +153,15 @@ export const properties = updateDisplayOptions(
       name: 'waitForResponse',
       type: 'boolean',
       default: true,
-      description: 'Whether to wait for button interactions before completing the node',
+      description: 'Whether to wait for button clicks before continuing the workflow',
     },
+    getFileAttachmentProperty(),
   ],
 )
+
+interface IButtonPromptCredentials extends IV2DiscordCredentials {
+  client: Client
+}
 
 /**
  * Sends an interactive button prompt to a Discord channel
@@ -164,36 +169,38 @@ export const properties = updateDisplayOptions(
  * @returns Promise resolving to execution data array
  */
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-  const returnData: INodeExecutionData[] = []
-  const items: INodeExecutionData[] = this.getInputData()
+  return executeV2OperationWithClient<IButtonPromptCredentials>(this, {
+    getCredentials: async (ctx) => {
+      const { createV2DiscordClient, getV2DiscordCredentials } = await import('../../helpers')\n      const credentials = await getV2DiscordCredentials.call(ctx)
+      const client = await createV2DiscordClient.call(ctx, credentials)
 
-  // Get credentials and create Discord client
-  const credentials = await getV2DiscordCredentials.call(this)
-  const client = await createV2DiscordClient.call(this, credentials)
+      if (!client) {
+        throw new NodeOperationError(ctx.getNode(), 'Discord client is required for interactive button operations')
+      }
 
-  if (!client) {
-    throw new NodeOperationError(this.getNode(), 'Discord client is required for interactive button operations')
-  }
+      // Set client in state manager
+      discordStateManager.setClient(client)
 
-  // Set client in state manager
-  discordStateManager.setClient(client)
-
-  try {
-    for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+      return { ...credentials, client }
+    },
+    operation: async (ctx, { client }, itemIndex) => {
       // Get parameters from the node
-      const channelId = this.getNodeParameter('channelId', itemIndex) as string
-      const content = this.getNodeParameter('content', itemIndex) as string
-      const buttonsData = this.getNodeParameter('buttons', itemIndex) as IDataObject
-      const collectionMode = this.getNodeParameter('collectionMode', itemIndex) as string
-      const timeoutSeconds = this.getNodeParameter('timeout', itemIndex) as number
-      const waitForResponse = this.getNodeParameter('waitForResponse', itemIndex) as boolean
+      const channelId = ctx.getNodeParameter('channelId', itemIndex) as string
+      const content = ctx.getNodeParameter('content', itemIndex) as string
+      const buttonsData = ctx.getNodeParameter('buttons', itemIndex) as IDataObject
+      const collectionMode = ctx.getNodeParameter('collectionMode', itemIndex) as string
+      const timeoutSeconds = ctx.getNodeParameter('timeout', itemIndex) as number
+      const waitForResponse = ctx.getNodeParameter('waitForResponse', itemIndex) as boolean
 
       // Extract button array from the fixedCollection structure
       const buttonArray = buttonsData.button as IDataObject[]
 
       if (!buttonArray || buttonArray.length === 0) {
-        throw new NodeOperationError(this.getNode(), 'At least one button is required')
+        throw new NodeOperationError(ctx.getNode(), 'At least one button is required')
       }
+
+      // Process file attachments
+      const files = await buildFileAttachments(ctx, itemIndex)
 
       // Create button components
       const buttons = buttonArray.map((button) =>
@@ -212,18 +219,18 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 
       // Send message with buttons using Discord.js with client
       const response = await sendChannelMessage.call(
-        this,
+        ctx,
         channelId,
         content,
         {
           components, // components
         },
-        undefined, // files
+        files.length > 0 ? files : undefined, // files
         client, // Discord client
       )
 
       const messageId = response.id
-      const workflowId = this.getWorkflow().id
+      const workflowId = ctx.getWorkflow().id
 
       // Set up interaction collector with Discord.js Collections system and performance optimization
       const buttonValues = buttonArray.map((button) => button.value as string)
@@ -238,10 +245,10 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
         },
       }
 
-      const collector = discordStateManager.createInteractionCollector(this, channelId, messageId, collectorOptions)
+      const collector = discordStateManager.createInteractionCollector(ctx, channelId, messageId, collectorOptions)
 
       if (!collector) {
-        throw new NodeOperationError(this.getNode(), 'Failed to create interaction collector')
+        throw new NodeOperationError(ctx.getNode(), 'Failed to create interaction collector')
       }
 
       const collectedInteractions: IDataObject[] = []
@@ -305,27 +312,25 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
       resultData.performanceMetrics = discordStateManager.getPerformanceMetrics()
       resultData.memoryPressure = discordStateManager.getMemoryPressureStatus()
 
-      returnData.push({
+      return {
         json: resultData,
         pairedItem: { item: itemIndex },
-      })
-    }
+      }
+    },
+    cleanup: async (ctx, { client }) => {
+      // Clean up expired interactions
+      try {
+        discordStateManager.cleanupExpiredInteractions()
+      } catch (err) {
+        LoggerProxy.warn('Failed during discordStateManager.cleanupExpiredInteractions', { error: err })
+      }
 
-    // Return collected results for successful execution
-    return [returnData]
-  } finally {
-    // Clean up expired interactions
-    try {
-      discordStateManager.cleanupExpiredInteractions()
-    } catch (err) {
-      LoggerProxy.warn('Failed during discordStateManager.cleanupExpiredInteractions', { error: err })
-    }
-
-    try {
-      // Release the pooled client by instance
-      await releaseV2DiscordClientByInstance.call(this, client)
-    } catch (err) {
-      LoggerProxy.error('Failed to release Discord client instance', { error: err })
-    }
-  }
+      try {
+        const { releaseV2DiscordClientByInstance } = await import('../../helpers')
+        await releaseV2DiscordClientByInstance(client)
+      } catch (err) {
+        LoggerProxy.error('Failed to release Discord client instance', { error: err })
+      }
+    },
+  })
 }

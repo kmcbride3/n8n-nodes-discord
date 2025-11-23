@@ -8,14 +8,23 @@
  * @module v2/actions/message/sendMessage
  */
 
-import { ButtonStyle, DiscordAPIError, HTTPError, RateLimitError } from 'discord.js'
+import { ButtonStyle, type Client } from 'discord.js'
 import type { IDataObject, IExecuteFunctions, INodeExecutionData, INodeProperties } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
 import { generateUniqueId } from '../../../helpers'
-import { isValidSnowflake, sendChannelMessage } from '../../helpers'
-import { buildEnhancedEmbed, createActionRow, createButtonComponent, getEnhancedEmbedProperties } from '../../helpers/builders'
-import { parseDiscordError, prepareErrorData, updateDisplayOptions } from '../../helpers/utils'
+import { buildFileAttachments as buildFileAttachmentsHelper, getFileAttachmentProperty } from '../../helpers/file-attachments'
+import type { IV2DiscordCredentials } from '../../helpers'
+import {
+  buildEnhancedEmbed,
+  createActionRow,
+  createButtonComponent,
+  executeV2OperationWithClient,
+  getEnhancedEmbedProperties,
+  isValidSnowflake,
+  sendChannelMessage,
+  updateDisplayOptions,
+} from '../../helpers'
 
 /**
  * Builds allowed mentions configuration from node parameters
@@ -60,37 +69,7 @@ function buildAllowedMentions(context: IExecuteFunctions, itemIndex: number): ID
   return allowedMentions
 }
 
-/**
- * Builds file attachments array from node parameters
- *
- * Extracts and formats file attachments from node configuration. Supports URLs
- * and binary data with optional filenames and descriptions. Files are attached
- * to Discord messages using Discord.js AttachmentBuilder.
- *
- * @param context - The n8n execution context
- * @param itemIndex - The index of the current item being processed
- * @returns Array of file attachment objects with name, url/data, and optional description
- *
- * @example
- * const files = buildFileAttachments(this, 0);
- * // Returns: [{ name: 'image.png', attachment: 'https://...', description: 'Screenshot' }]
- */
-function buildFileAttachments(
-  context: IExecuteFunctions,
-  itemIndex: number,
-): Array<{ name: string; attachment: string; description?: string }> {
-  const filesParam = context.getNodeParameter('files', itemIndex, { file: [] }) as {
-    file?: Array<{ url: string; filename?: string; description?: string }>
-  }
 
-  if (!filesParam.file || filesParam.file.length === 0) return []
-
-  return filesParam.file.map((file) => ({
-    name: file.filename || 'attachment',
-    attachment: file.url,
-    description: file.description,
-  }))
-}
 
 /**
  * Builds Discord message components (buttons/select menus) using Discord.js builders
@@ -231,49 +210,13 @@ export const properties = updateDisplayOptions(
       description: 'Roles to mention in the message.',
     },
     {
-      displayName: 'Files',
-      name: 'files',
-      placeholder: 'Add File',
-      type: 'fixedCollection',
-      typeOptions: {
-        multipleValues: true,
-      },
+      ...getFileAttachmentProperty(),
       displayOptions: {
         show: {
           resource: ['message'],
           operation: ['send'],
         },
       },
-      default: {},
-      options: [
-        {
-          name: 'file',
-          displayName: 'File',
-          values: [
-            {
-              displayName: 'File URL or Base64',
-              name: 'url',
-              type: 'string',
-              default: '',
-              description: 'URL of the file to attach or base64 encoded file data.',
-            },
-            {
-              displayName: 'Filename',
-              name: 'filename',
-              type: 'string',
-              default: '',
-              description: 'Name of the file (optional, will be auto-detected from URL if not provided).',
-            },
-            {
-              displayName: 'Description',
-              name: 'description',
-              type: 'string',
-              default: '',
-              description: 'Description of the file (optional).',
-            },
-          ],
-        },
-      ],
     },
     {
       displayName: 'Components',
@@ -437,6 +380,10 @@ export const properties = updateDisplayOptions(
   ],
 )
 
+interface ISendMessageCredentials extends IV2DiscordCredentials {
+  client: Client
+}
+
 /**
  * Executes the Discord send message operation
  *
@@ -455,104 +402,86 @@ export const properties = updateDisplayOptions(
  * // Returns: [[{ json: { id: '123', content: 'Hello', ... }, pairedItem: { item: 0 } }]]
  */
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-  const returnData: INodeExecutionData[] = []
-  const items: INodeExecutionData[] = this.getInputData()
+  return executeV2OperationWithClient<ISendMessageCredentials>(this, {
+    getCredentials: async (ctx) => {
+      const { createV2DiscordClient, getV2DiscordCredentials } = await import('../../helpers')
+      const credentials = await getV2DiscordCredentials.call(ctx)
+      const client = await createV2DiscordClient.call(ctx, credentials)
 
-  // CRITICAL: Create Discord client for message operations
-  // Import dynamically to avoid circular dependencies
-  const { createV2DiscordClient, getV2DiscordCredentials, releaseV2DiscordClientByInstance } = await import(
-    '../../helpers'
-  )
+      if (!client) {
+        throw new NodeOperationError(ctx.getNode(), 'Discord client is required for message operations')
+      }
 
-  const credentials = await getV2DiscordCredentials.call(this)
-  const client = await createV2DiscordClient.call(this, credentials)
+      if (!client.isReady()) {
+        throw new NodeOperationError(ctx.getNode(), 'Discord client failed to initialize properly', {
+          description: 'The Discord client connection is not ready. Please check your bot token and try again.',
+        })
+      }
 
-  if (!client) {
-    throw new NodeOperationError(this.getNode(), 'Discord client is required for message operations')
-  }
-
-  // Validate client is ready before processing items
-  if (!client.isReady()) {
-    throw new NodeOperationError(this.getNode(), 'Discord client failed to initialize properly', {
-      description: 'The Discord client connection is not ready. Please check your bot token and try again.',
-    })
-  }
-
-  try {
-    for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+      return { ...credentials, client }
+    },
+    operation: async (ctx, { client }, itemIndex) => {
       // Get channel ID and validate using Discord.js patterns
-      const channelId = this.getNodeParameter('channelId', itemIndex) as string
-      const content = this.getNodeParameter('content', itemIndex) as string
+      const channelId = ctx.getNodeParameter('channelId', itemIndex) as string
+      const content = ctx.getNodeParameter('content', itemIndex) as string
 
       if (!channelId) {
-        continue
+        throw new NodeOperationError(ctx.getNode(), 'Channel ID is required', { itemIndex })
       }
 
       // Validate channel ID using Discord.js snowflake validation
       if (!isValidSnowflake(channelId)) {
-        throw new NodeOperationError(this.getNode(), `Invalid channel ID: ${channelId}`, { itemIndex })
+        throw new NodeOperationError(ctx.getNode(), `Invalid channel ID: ${channelId}`, { itemIndex })
       }
 
       // Prepare embeds using enhanced embed builder
-      const embed = buildEnhancedEmbed(this, itemIndex)
+      const embed = buildEnhancedEmbed(ctx, itemIndex)
       const embeds = embed ? [embed] : undefined
 
       // Prepare allowed mentions using existing helper
-      const allowedMentions = buildAllowedMentions(this, itemIndex)
+      const allowedMentions = buildAllowedMentions(ctx, itemIndex)
 
-      // Prepare file attachments using existing helper
-      const processedFiles = buildFileAttachments(this, itemIndex)
+      // Prepare file attachments using enhanced helper with binary data support
+      const processedFiles = await buildFileAttachmentsHelper(ctx, itemIndex)
 
       // Prepare components using existing helper (Discord.js v14 components)
-      const { components } = buildComponents(this, itemIndex)
+      const { components } = buildComponents(ctx, itemIndex)
 
-      try {
-        // Send message using Discord.js v14 API with enhanced error handling
-        const response = await sendChannelMessage.call(
-          this,
-          channelId,
-          content,
-          {
-            embeds,
-            components,
-            allowedMentions,
-          },
-          processedFiles,
-          client, // CRITICAL: Pass the Discord client
-        )
+      // Send message using Discord.js v14 API with enhanced error handling
+      const response = await sendChannelMessage.call(
+        ctx,
+        channelId,
+        content,
+        {
+          embeds,
+          components,
+          allowedMentions,
+        },
+        processedFiles,
+        client,
+      )
 
-        // Note: Component interaction collection is handled by the Discord Trigger node
-        // V2 operations send messages but don't wait for responses (stateless design)
-        // For interactive workflows, use the Discord Trigger node to capture button/select interactions
+      // Note: Component interaction collection is handled by the Discord Trigger node
+      // V2 operations send messages but don't wait for responses (stateless design)
+      // For interactive workflows, use the Discord Trigger node to capture button/select interactions
 
-        returnData.push({
-          json: {
-            messageId: response.id,
-            channelId: response.channel_id,
-            content: response.content,
-            embeds: response.embeds,
-            components: response.components,
-            timestamp: response.timestamp,
-            author: response.author,
-            discordVersion: 'v14',
-          },
-          pairedItem: { item: itemIndex },
-        })
-      } catch (error) {
-        // Use standardized Discord error handling
-        if (error instanceof DiscordAPIError || error instanceof RateLimitError || error instanceof HTTPError) {
-          throw parseDiscordError.call(this, error, itemIndex)
-        } else {
-          throw prepareErrorData.call(this, error, itemIndex)
-        }
+      return {
+        json: {
+          messageId: response.id,
+          channelId: response.channel_id,
+          content: response.content,
+          embeds: response.embeds,
+          components: response.components,
+          timestamp: response.timestamp,
+          author: response.author,
+          discordVersion: 'v14',
+        },
+        pairedItem: { item: itemIndex },
       }
-    }
-
-    return [returnData]
-  } finally {
-    // Release Discord client back to the pool
-    if (client) {
+    },
+    cleanup: async (ctx, { client }) => {
+      const { releaseV2DiscordClientByInstance } = await import('../../helpers')
       await releaseV2DiscordClientByInstance(client)
-    }
-  }
+    },
+  })
 }

@@ -1,17 +1,17 @@
-import { MessageComponentInteraction } from 'discord.js'
+import type { Client, MessageComponentInteraction } from 'discord.js'
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
 import { LoggerProxy, NodeOperationError } from 'n8n-workflow'
 
 import { generateUniqueId } from '../../../helpers'
+import type { IV2DiscordCredentials } from '../../helpers'
 import {
-  createV2DiscordClient,
   discordStateManager,
-  getV2DiscordCredentials,
-  releaseV2DiscordClientByInstance,
+  executeV2OperationWithClient,
   sendChannelMessage,
+  updateDisplayOptions,
 } from '../../helpers'
+import { buildFileAttachments, getFileAttachmentProperty } from '../../helpers/file-attachments'
 import { createActionRow, createSelectMenuComponent } from '../../helpers/builders'
-import { updateDisplayOptions } from '../../helpers/utils'
 
 export const properties = updateDisplayOptions(
   {
@@ -86,8 +86,13 @@ export const properties = updateDisplayOptions(
       default: 300,
       description: 'How long to wait for a response before timing out',
     },
+    getFileAttachmentProperty(),
   ],
 )
+
+interface ISelectPromptCredentials extends IV2DiscordCredentials {
+  client: Client
+}
 
 /**
  * Sends an interactive select menu prompt to a Discord channel
@@ -95,33 +100,36 @@ export const properties = updateDisplayOptions(
  * @returns Promise resolving to execution data array
  */
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-  const returnData: INodeExecutionData[] = []
-  const items: INodeExecutionData[] = this.getInputData()
+  return executeV2OperationWithClient<ISelectPromptCredentials>(this, {
+    getCredentials: async (ctx) => {
+      const { createV2DiscordClient, getV2DiscordCredentials } = await import('../../helpers')
+      const credentials = await getV2DiscordCredentials.call(ctx)
+      const client = await createV2DiscordClient.call(ctx, credentials)
 
-  // Get credentials and create Discord client
-  const credentials = await getV2DiscordCredentials.call(this)
-  const client = await createV2DiscordClient.call(this, credentials)
+      if (!client) {
+        throw new NodeOperationError(ctx.getNode(), 'Discord client is required for interactive select operations')
+      }
 
-  if (!client) {
-    throw new NodeOperationError(this.getNode(), 'Discord client is required for interactive select operations')
-  }
+      // Set client in state manager
+      discordStateManager.setClient(client)
 
-  // Set client in state manager
-  discordStateManager.setClient(client)
-
-  try {
-    for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+      return { ...credentials, client }
+    },
+    operation: async (ctx, { client }, itemIndex) => {
       // Get parameters from the node
-      const channelId = this.getNodeParameter('channelId', itemIndex) as string
-      const content = this.getNodeParameter('content', itemIndex) as string
-      const selectData = this.getNodeParameter('select', itemIndex) as IDataObject
+      const channelId = ctx.getNodeParameter('channelId', itemIndex) as string
+      const content = ctx.getNodeParameter('content', itemIndex) as string
+      const selectData = ctx.getNodeParameter('select', itemIndex) as IDataObject
 
       // Extract options array from the fixedCollection structure
       const optionArray = selectData.select as IDataObject[]
 
       if (!optionArray || optionArray.length === 0) {
-        throw new NodeOperationError(this.getNode(), 'At least one select option is required')
+        throw new NodeOperationError(ctx.getNode(), 'At least one select option is required')
       }
+
+      // Process file attachments
+      const files = await buildFileAttachments(ctx, itemIndex)
 
       // Create select menu options
       const options = optionArray.map((option) => ({
@@ -146,21 +154,21 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 
       // Send message with select menu using Discord.js with client
       const response = await sendChannelMessage.call(
-        this,
+        ctx,
         channelId,
         content,
         {
           components, // components
         },
-        undefined, // files
+        files.length > 0 ? files : undefined, // files
         client, // Discord client
       )
 
       const messageId = response.id
-      const workflowId = this.getWorkflow().id
+      const workflowId = ctx.getWorkflow().id
 
       // Set up interaction collector with Discord.js Collections system and performance optimization
-      const collector = discordStateManager.createInteractionCollector(this, channelId, messageId, {
+      const collector = discordStateManager.createInteractionCollector(ctx, channelId, messageId, {
         timeout: 5 * 60 * 1000, // 5 minutes optimized for select menu interactions
         persistent: false, // Default to single-use
         workflowId,
@@ -171,10 +179,10 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
       })
 
       if (!collector) {
-        throw new NodeOperationError(this.getNode(), 'Failed to create interaction collector')
+        throw new NodeOperationError(ctx.getNode(), 'Failed to create interaction collector')
       }
 
-      returnData.push({
+      return {
         json: {
           messageId: response.id,
           channelId: response.channel_id || channelId,
@@ -189,21 +197,18 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
           memoryPressure: discordStateManager.getMemoryPressureStatus(),
         },
         pairedItem: { item: itemIndex },
-      })
-    }
+      }
+    },
+    cleanup: async (ctx, { client }) => {
+      // Clean up expired interactions
+      discordStateManager.cleanupExpiredInteractions()
 
-    // Clean up expired interactions
-    discordStateManager.cleanupExpiredInteractions()
-
-    return [returnData]
-  } finally {
-    try {
-      await releaseV2DiscordClientByInstance.call(this, client)
-    } catch (e) {
-      // Log but don't fail the node if release fails
-      LoggerProxy && LoggerProxy.warn
-        ? LoggerProxy.warn('Failed to release Discord client after select prompt operation', { error: e })
-        : null
-    }
-  }
+      try {
+        const { releaseV2DiscordClientByInstance } = await import('../../helpers')
+        await releaseV2DiscordClientByInstance(client)
+      } catch (e) {
+        LoggerProxy?.warn('Failed to release Discord client after select prompt operation', { error: e })
+      }
+    },
+  })
 }

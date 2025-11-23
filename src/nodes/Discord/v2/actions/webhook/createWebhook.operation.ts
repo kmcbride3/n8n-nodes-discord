@@ -1,8 +1,9 @@
+import type { Client } from 'discord.js'
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
-import { createChannelWebhook } from '../../helpers/discord-operations'
-import { updateDisplayOptions } from '../../helpers/utils'
+import type { IV2DiscordCredentials } from '../../helpers'
+import { createChannelWebhook, executeV2OperationWithClient, updateDisplayOptions } from '../../helpers'
 
 export const properties = updateDisplayOptions(
   {
@@ -45,81 +46,60 @@ export const properties = updateDisplayOptions(
   ],
 )
 
-/**
- * Creates a new Discord webhook
- * @param this - n8n execution context
- * @returns Promise resolving to execution data array
- */
+interface ICreateWebhookCredentials extends IV2DiscordCredentials {
+  client: Client
+}
+
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-  // Dynamically import Discord client creation helpers
-  const { createV2DiscordClient, getV2DiscordCredentials, releaseV2DiscordClientByInstance } = await import(
-    '../../helpers'
-  )
+  return executeV2OperationWithClient<ICreateWebhookCredentials>(this, {
+    getCredentials: async (ctx) => {
+      const { createV2DiscordClient, getV2DiscordCredentials } = await import('../../helpers')
+      const credentials = await getV2DiscordCredentials.call(ctx)
+      const client = await createV2DiscordClient.call(ctx, credentials)
 
-  // Get credentials and create Discord client
-  const credentials = await getV2DiscordCredentials.call(this)
-  const client = await createV2DiscordClient.call(this, credentials)
-
-  const returnData: INodeExecutionData[] = []
-  const items: INodeExecutionData[] = this.getInputData()
-
-  try {
-    for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-      const channelId = this.getNodeParameter('channelId', itemIndex) as string
-      const webhookName = this.getNodeParameter('webhookName', itemIndex) as string
-      const avatarUrl = this.getNodeParameter('avatarUrl', itemIndex, '') as string
-      const reason = this.getNodeParameter('reason', itemIndex, '') as string
+      return { ...credentials, client: client! }
+    },
+    operation: async (ctx, { client }, itemIndex) => {
+      const channelId = ctx.getNodeParameter('channelId', itemIndex) as string
+      const webhookName = ctx.getNodeParameter('webhookName', itemIndex) as string
+      const avatarUrl = ctx.getNodeParameter('avatarUrl', itemIndex, '') as string
+      const reason = ctx.getNodeParameter('reason', itemIndex, '') as string
 
       if (!channelId || !webhookName) {
-        throw new NodeOperationError(this.getNode(), 'Channel ID and Webhook Name are required', {
+        throw new NodeOperationError(ctx.getNode(), 'Channel ID and Webhook Name are required', {
           itemIndex,
         })
       }
 
-      try {
-        const response = await createChannelWebhook.call(
-          this,
-          channelId,
-          webhookName,
-          avatarUrl || undefined,
-          reason || undefined,
-          client ?? undefined,
-        )
+      const response = await createChannelWebhook.call(
+        ctx,
+        channelId,
+        webhookName,
+        avatarUrl || undefined,
+        reason || undefined,
+        client,
+      )
 
-        returnData.push({
-          json: {
-            success: true,
-            webhookId: response.id,
-            webhookToken: response.token,
-            webhookUrl: response.url,
-            webhookName: response.name,
-            channelId: response.channel_id,
-            guildId: response.guild_id,
-            avatar: response.avatar,
-            reason: reason || undefined,
-            action: 'createWebhook',
-            timestamp: new Date().toISOString(),
-          },
-          pairedItem: { item: itemIndex },
-        })
-      } catch (error) {
-        returnData.push({
-          json: {
-            success: false,
-            error: error.message,
-            channelId,
-            webhookName,
-            action: 'createWebhook',
-          },
-          pairedItem: { item: itemIndex },
-        })
+      return {
+        json: {
+          success: true,
+          webhookId: response.id,
+          webhookToken: response.token,
+          webhookUrl: response.url,
+          webhookName: response.name,
+          channelId: response.channel_id,
+          guildId: response.guild_id,
+          avatar: response.avatar,
+          reason: reason || undefined,
+          action: 'createWebhook',
+          timestamp: new Date().toISOString(),
+        },
+        pairedItem: { item: itemIndex },
       }
-    }
-  } finally {
-    if (client) {
+    },
+    cleanup: async (ctx, { client }) => {
+      const { releaseV2DiscordClientByInstance } = await import('../../helpers')
       await releaseV2DiscordClientByInstance(client)
-    }
-  }
-
-  return [returnData]
+    },
+  })
 }

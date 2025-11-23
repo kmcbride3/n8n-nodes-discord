@@ -14,10 +14,11 @@ import type {
   Client,
   MessageCreateOptions,
   NewsChannel,
+  RESTPostAPIWebhookWithTokenJSONBody,
   TextChannel,
   WebhookMessageCreateOptions,
 } from 'discord.js'
-import { WebhookClient } from 'discord.js'
+import { REST, Routes, WebhookClient } from 'discord.js'
 import type { IExecuteFunctions } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
@@ -261,6 +262,81 @@ export async function sendChannelMessage(
 
   const message = await channel.send(messageOptions)
   return message.toJSON() as APIMessage
+}
+
+/**
+ * Send interaction response using Discord.js REST client
+ * Leverages Discord.js built-in multipart form-data handling for files
+ */
+export async function sendInteractionResponse(
+  this: IExecuteFunctions,
+  interactionId: string,
+  interactionToken: string,
+  botToken: string,
+  responseType: number,
+  data: {
+    content?: string
+    embeds?: object[]
+    files?: object[]
+    components?: object[]
+    flags?: number
+    tts?: boolean
+  },
+): Promise<void> {
+  const rest = new REST({ version: '10' }).setToken(botToken)
+
+  // Use Discord.js REST client which handles file uploads automatically
+  await rest.post(Routes.interactionCallback(interactionId, interactionToken), {
+    body: {
+      type: responseType,
+      data,
+    },
+    files: data.files as any[], // Discord.js REST handles AttachmentBuilder[] automatically
+  })
+}
+
+/**
+ * Send interaction follow-up message using Discord.js REST client
+ * Leverages Discord.js built-in multipart form-data handling for files
+ */
+export async function sendInteractionFollowUp(
+  this: IExecuteFunctions,
+  applicationId: string,
+  interactionToken: string,
+  botToken: string,
+  data: RESTPostAPIWebhookWithTokenJSONBody & { files?: object[] },
+): Promise<APIMessage> {
+  const rest = new REST({ version: '10' }).setToken(botToken)
+
+  // Use Discord.js REST client which handles file uploads automatically
+  const response = (await rest.post(Routes.webhook(applicationId, interactionToken), {
+    body: data,
+    files: data.files as any[], // Discord.js REST handles AttachmentBuilder[] automatically
+  })) as APIMessage
+
+  return response
+}
+
+/**
+ * Edit interaction original response using Discord.js REST client
+ * Leverages Discord.js built-in multipart form-data handling for files
+ */
+export async function editInteractionResponse(
+  this: IExecuteFunctions,
+  applicationId: string,
+  interactionToken: string,
+  botToken: string,
+  data: { content?: string; embeds?: object[]; files?: object[]; components?: object[] },
+): Promise<APIMessage> {
+  const rest = new REST({ version: '10' }).setToken(botToken)
+
+  // Use Discord.js REST client which handles file uploads automatically
+  const response = (await rest.patch(Routes.webhookMessage(applicationId, interactionToken, '@original'), {
+    body: data,
+    files: data.files as any[], // Discord.js REST handles AttachmentBuilder[] automatically
+  })) as APIMessage
+
+  return response
 }
 
 /**

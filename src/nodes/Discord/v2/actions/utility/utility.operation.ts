@@ -1,7 +1,7 @@
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
-import { updateDisplayOptions } from '../../helpers/utils'
+import { executeV2Operation, updateDisplayOptions } from '../../helpers'
 
 export const properties = updateDisplayOptions(
   {
@@ -33,60 +33,47 @@ export const properties = updateDisplayOptions(
   ],
 )
 
+interface IUtilityCredentials {
+  noCredentials: true
+}
+
 /**
  * Performs utility actions on Discord bot
  * @param this - n8n execution context
  * @returns Promise resolving to execution data array
  */
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-  const items = this.getInputData()
-  const returnData: INodeExecutionData[] = []
+  return executeV2Operation<IUtilityCredentials>(this, {
+    getCredentials: async () => ({ noCredentials: true }),
+    operation: async (ctx, _credentials, itemIndex) => {
+      const utilityAction = ctx.getNodeParameter('utilityAction', itemIndex) as string
 
-  for (let i = 0; i < items.length; i++) {
-    const utilityAction = this.getNodeParameter('utilityAction', i) as string
-
-    try {
       switch (utilityAction) {
         case 'clearPlaceholder':
-          // Implementation for clearing placeholder
-          returnData.push({
+          return {
             json: {
               success: true,
               action: 'clearPlaceholder',
               message: 'Placeholder cleared successfully',
             },
-            pairedItem: { item: i },
-          })
-          break
+            pairedItem: { item: itemIndex },
+          }
 
         case 'updateStatus':
-          // Implementation for updating bot status
-          returnData.push({
+          return {
             json: {
               success: true,
               action: 'updateStatus',
               message: 'Bot status updated successfully',
             },
-            pairedItem: { item: i },
-          })
-          break
+            pairedItem: { item: itemIndex },
+          }
 
         default:
-          throw new NodeOperationError(this.getNode(), `Unknown utility action: ${utilityAction}`, {
-            itemIndex: i,
+          throw new NodeOperationError(ctx.getNode(), `Unknown utility action: ${utilityAction}`, {
+            itemIndex,
           })
       }
-    } catch (error) {
-      if (this.continueOnFail()) {
-        returnData.push({
-          json: { error: error.message },
-          pairedItem: { item: i },
-        })
-        continue
-      }
-      throw error
-    }
-  }
-
-  return [returnData]
+    },
+  })
 }

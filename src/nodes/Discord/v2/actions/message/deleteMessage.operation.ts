@@ -10,12 +10,13 @@
  * @module v2/actions/message/deleteMessage
  */
 
+import type { Client } from 'discord.js'
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
 import { DiscordValidation } from '../../../shared'
-import { deleteMessage } from '../../helpers'
-import { parseDiscordError, updateDisplayOptions } from '../../helpers/utils'
+import type { IV2DiscordCredentials } from '../../helpers'
+import { deleteMessage, executeV2OperationWithClient, updateDisplayOptions } from '../../helpers'
 
 export const properties = updateDisplayOptions(
   {
@@ -71,82 +72,60 @@ export const properties = updateDisplayOptions(
  * const result = await execute.call(this);
  * // Returns: [[{ json: { success: true, deleted: true, messageId: '123', channelId: '456' }, pairedItem: { item: 0 } }]]
  */
+interface IDeleteMessageCredentials extends IV2DiscordCredentials {
+  client: Client
+}
+
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-  const returnData: INodeExecutionData[] = []
-  const items: INodeExecutionData[] = this.getInputData()
+  return executeV2OperationWithClient<IDeleteMessageCredentials>(this, {
+    getCredentials: async (ctx) => {
+      const { createV2DiscordClient, getV2DiscordCredentials } = await import('../../helpers')
+      const credentials = await getV2DiscordCredentials.call(ctx)
+      const client = await createV2DiscordClient.call(ctx, credentials)
 
-  // CRITICAL: Create Discord client for message operations
-  const { createV2DiscordClient, getV2DiscordCredentials, releaseV2DiscordClientByInstance } = await import(
-    '../../helpers'
-  )
-
-  const credentials = await getV2DiscordCredentials.call(this)
-  const client = await createV2DiscordClient.call(this, credentials)
-
-  if (!client) {
-    throw new NodeOperationError(this.getNode(), 'Discord client is required for message delete operations')
-  }
-
-  // Validate client is ready before processing items
-  if (!client.isReady()) {
-    throw new NodeOperationError(this.getNode(), 'Discord client failed to initialize properly', {
-      description: 'The Discord client connection is not ready. Please check your bot token and try again.',
-    })
-  }
-
-  try {
-    for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-      const channelId = this.getNodeParameter('channelId', itemIndex) as string
-      const messageId = this.getNodeParameter('messageId', itemIndex) as string
-      const reason = this.getNodeParameter('reason', itemIndex, '') as string
-
-      try {
-        // Validate parameters using consolidated validation
-        DiscordValidation.snowflake(channelId, 'Channel ID', this.getNode())
-        DiscordValidation.snowflake(messageId, 'Message ID', this.getNode())
-
-        if (reason) {
-          DiscordValidation.auditLogReason(reason, this.getNode())
-        }
-
-        // Delete message using V2 helpers
-        await deleteMessage.call(this, channelId, messageId, reason || undefined, client)
-
-        returnData.push({
-          json: {
-            success: true,
-            channelId,
-            messageId,
-            deleted: true,
-            reason: reason || undefined,
-            timestamp: new Date().toISOString(),
-          },
-          pairedItem: { item: itemIndex },
-        })
-      } catch (error) {
-        if (this.continueOnFail()) {
-          returnData.push({
-            json: {
-              success: false,
-              error: error instanceof Error ? error.message : String(error),
-              channelId,
-              messageId,
-              action: 'deleteMessage',
-              timestamp: new Date().toISOString(),
-            },
-            pairedItem: { item: itemIndex },
-          })
-        } else {
-          throw parseDiscordError.call(this, error, itemIndex)
-        }
+      if (!client) {
+        throw new NodeOperationError(ctx.getNode(), 'Discord client is required for message delete operations')
       }
-    }
 
-    return [returnData]
-  } finally {
-    // Release Discord client back to the pool
-    if (client) {
+      if (!client.isReady()) {
+        throw new NodeOperationError(ctx.getNode(), 'Discord client failed to initialize properly', {
+          description: 'The Discord client connection is not ready. Please check your bot token and try again.',
+        })
+      }
+
+      return { ...credentials, client }
+    },
+    operation: async (ctx, { client }, itemIndex) => {
+      const channelId = ctx.getNodeParameter('channelId', itemIndex) as string
+      const messageId = ctx.getNodeParameter('messageId', itemIndex) as string
+      const reason = ctx.getNodeParameter('reason', itemIndex, '') as string
+
+      // Validate parameters using consolidated validation
+      DiscordValidation.snowflake(channelId, 'Channel ID', ctx.getNode())
+      DiscordValidation.snowflake(messageId, 'Message ID', ctx.getNode())
+
+      if (reason) {
+        DiscordValidation.auditLogReason(reason, ctx.getNode())
+      }
+
+      // Delete message using V2 helpers
+      await deleteMessage.call(ctx, channelId, messageId, reason || undefined, client)
+
+      return {
+        json: {
+          success: true,
+          channelId,
+          messageId,
+          deleted: true,
+          reason: reason || undefined,
+          timestamp: new Date().toISOString(),
+        },
+        pairedItem: { item: itemIndex },
+      }
+    },
+    cleanup: async (ctx, { client }) => {
+      const { releaseV2DiscordClientByInstance } = await import('../../helpers')
       await releaseV2DiscordClientByInstance(client)
-    }
-  }
+    },
+  })
 }

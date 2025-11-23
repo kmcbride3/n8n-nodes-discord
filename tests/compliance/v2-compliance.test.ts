@@ -21,7 +21,9 @@ describe('V2 Compliance Tests', () => {
         // If the file uses updateDisplayOptions, ensure it's imported.
         const usesUpdateDisplayOptions = /export\s+const\s+properties\s*=\s*updateDisplayOptions/.test(content)
         if (usesUpdateDisplayOptions) {
-          expect(content).toMatch(/import.*updateDisplayOptions.*from.*utils/)
+          // Check if updateDisplayOptions is imported from helpers (can be multi-line destructured import)
+          const hasImport = /import[\s\S]*updateDisplayOptions[\s\S]*from[\s\S]*['"].*helpers/.test(content)
+          expect(hasImport).toBe(true)
         } else {
           // Allow legacy pattern: exported properties as an array (typed or untyped)
           expect(content).toMatch(/export\s+const\s+properties\s*[:\w\s\<\>\[\]]*=\s*\[/)
@@ -57,9 +59,11 @@ describe('V2 Compliance Tests', () => {
         const usesSharedExecution =
           /import.*execute\w+Operation.*from.*shared/.test(content) &&
           /return execute\w+Operation\(this\)/.test(content)
+        // Recognize executeV2Operation wrapper as proper error handling
+        const usesV2Wrapper = /executeV2Operation/.test(content)
         const hasErrorHandling = /parseDiscordError|NodeOperationError|try|catch|throw/.test(content)
 
-        expect(usesSharedExecution || hasErrorHandling).toBe(true)
+        expect(usesSharedExecution || usesV2Wrapper || hasErrorHandling).toBe(true)
       })
     })
 
