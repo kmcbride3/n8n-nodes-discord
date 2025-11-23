@@ -14,6 +14,7 @@ import type {
   Client,
   MessageCreateOptions,
   NewsChannel,
+  RawFile,
   RESTPostAPIWebhookWithTokenJSONBody,
   TextChannel,
   WebhookMessageCreateOptions,
@@ -291,7 +292,7 @@ export async function sendInteractionResponse(
       type: responseType,
       data,
     },
-    files: data.files as any[], // Discord.js REST handles AttachmentBuilder[] automatically
+    files: (data.files ?? []) as RawFile[], // Discord.js REST handles AttachmentBuilder[] automatically
   })
 }
 
@@ -311,7 +312,7 @@ export async function sendInteractionFollowUp(
   // Use Discord.js REST client which handles file uploads automatically
   const response = (await rest.post(Routes.webhook(applicationId, interactionToken), {
     body: data,
-    files: data.files as any[], // Discord.js REST handles AttachmentBuilder[] automatically
+    files: (data.files ?? []) as RawFile[], // Discord.js REST handles AttachmentBuilder[] automatically
   })) as APIMessage
 
   return response
@@ -333,7 +334,7 @@ export async function editInteractionResponse(
   // Use Discord.js REST client which handles file uploads automatically
   const response = (await rest.patch(Routes.webhookMessage(applicationId, interactionToken, '@original'), {
     body: data,
-    files: data.files as any[], // Discord.js REST handles AttachmentBuilder[] automatically
+    files: (data.files ?? []) as RawFile[], // Discord.js REST handles AttachmentBuilder[] automatically
   })) as APIMessage
 
   return response

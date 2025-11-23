@@ -13,7 +13,6 @@ import type { IDataObject, IExecuteFunctions, INodeExecutionData, INodePropertie
 import { NodeOperationError } from 'n8n-workflow'
 
 import { generateUniqueId } from '../../../helpers'
-import { buildFileAttachments as buildFileAttachmentsHelper, getFileAttachmentProperty } from '../../helpers/file-attachments'
 import type { IV2DiscordCredentials } from '../../helpers'
 import {
   buildEnhancedEmbed,
@@ -25,6 +24,10 @@ import {
   sendChannelMessage,
   updateDisplayOptions,
 } from '../../helpers'
+import {
+  buildFileAttachments as buildFileAttachmentsHelper,
+  getFileAttachmentProperty,
+} from '../../helpers/file-attachments'
 
 /**
  * Builds allowed mentions configuration from node parameters
@@ -68,8 +71,6 @@ function buildAllowedMentions(context: IExecuteFunctions, itemIndex: number): ID
 
   return allowedMentions
 }
-
-
 
 /**
  * Builds Discord message components (buttons/select menus) using Discord.js builders
@@ -183,16 +184,18 @@ export const properties = updateDisplayOptions(
       description: 'The text content of the message to send.',
     },
     // Enhanced embed properties with full Discord.js support
-    ...getEnhancedEmbedProperties().map((prop): INodeProperties => ({
-      ...prop,
-      displayOptions: {
-        show: {
-          resource: ['message'],
-          operation: ['send'],
-          ...((prop.displayOptions as any)?.show || {}),
+    ...getEnhancedEmbedProperties().map(
+      (prop): INodeProperties => ({
+        ...prop,
+        displayOptions: {
+          show: {
+            resource: ['message'],
+            operation: ['send'],
+            ...((prop.displayOptions as { show?: Record<string, unknown> })?.show || {}),
+          },
         },
-      },
-    })),
+      }),
+    ),
     {
       displayName: 'Mention Roles',
       name: 'mentionRoles',

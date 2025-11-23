@@ -10,8 +10,8 @@ import {
   sendChannelMessage,
   updateDisplayOptions,
 } from '../../helpers'
-import { buildFileAttachments, getFileAttachmentProperty } from '../../helpers/file-attachments'
 import { createActionRow, createSelectMenuComponent } from '../../helpers/builders'
+import { buildFileAttachments, getFileAttachmentProperty } from '../../helpers/file-attachments'
 
 export const properties = updateDisplayOptions(
   {

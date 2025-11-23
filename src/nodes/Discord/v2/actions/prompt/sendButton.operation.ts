@@ -25,8 +25,8 @@ import {
   sendChannelMessage,
   updateDisplayOptions,
 } from '../../helpers'
-import { buildFileAttachments, getFileAttachmentProperty } from '../../helpers/file-attachments'
 import { createActionRow, createButtonComponent } from '../../helpers/builders'
+import { buildFileAttachments, getFileAttachmentProperty } from '../../helpers/file-attachments'
 
 export const properties = updateDisplayOptions(
   {
@@ -171,7 +171,8 @@ interface IButtonPromptCredentials extends IV2DiscordCredentials {
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
   return executeV2OperationWithClient<IButtonPromptCredentials>(this, {
     getCredentials: async (ctx) => {
-      const { createV2DiscordClient, getV2DiscordCredentials } = await import('../../helpers')\n      const credentials = await getV2DiscordCredentials.call(ctx)
+      const { createV2DiscordClient, getV2DiscordCredentials } = await import('../../helpers')
+      const credentials = await getV2DiscordCredentials.call(ctx)
       const client = await createV2DiscordClient.call(ctx, credentials)
 
       if (!client) {

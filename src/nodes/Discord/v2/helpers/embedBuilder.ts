@@ -293,10 +293,10 @@ export function buildEnhancedEmbed(context: IExecuteFunctions, itemIndex: number
       // Video is set via the data property in the JSON (Discord.js doesn't have setVideo)
       const embedData = embedBuilder.toJSON()
       embedData.video = { url: videoUrl }
-      
+
       // Validate the complete embed
       validateEmbedLimits(embedData as unknown as IDataObject)
-      
+
       return embedData as IDataObject
     }
 
@@ -321,11 +321,10 @@ export function buildEnhancedEmbed(context: IExecuteFunctions, itemIndex: number
 
     return embedData as IDataObject
   } catch (error) {
-    throw new NodeOperationError(
-      context.getNode(),
-      `Failed to build embed: ${error.message}`,
-      { itemIndex, description: 'Check your embed configuration and ensure all URLs and base64 images are valid' },
-    )
+    throw new NodeOperationError(context.getNode(), `Failed to build embed: ${error.message}`, {
+      itemIndex,
+      description: 'Check your embed configuration and ensure all URLs and base64 images are valid',
+    })
   }
 }
 

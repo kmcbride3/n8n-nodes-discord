@@ -24,7 +24,7 @@ import type { IDiscordFile } from './types'
 export { ButtonStyle } from 'discord.js'
 
 // Re-export enhanced embed builder
-export { buildEnhancedEmbed, getEnhancedEmbedProperties, EMBED_LIMITS } from './embedBuilder'
+export { buildEnhancedEmbed, EMBED_LIMITS, getEnhancedEmbedProperties } from './embedBuilder'
 
 /**
  * Creates a Discord button component using Discord.js ButtonBuilder
@@ -157,4 +157,3 @@ export function prepareFile(fileName: string, fileData: Buffer | string, content
     content_type: contentType,
   }
 }
-

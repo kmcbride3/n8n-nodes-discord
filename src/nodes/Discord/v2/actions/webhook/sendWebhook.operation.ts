@@ -1,8 +1,7 @@
-import type { IDataObject, IExecuteFunctions, INodeExecutionData, INodeProperties } from 'n8n-workflow'
+import type { IExecuteFunctions, INodeExecutionData, INodeProperties } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
 import { validateWebhookToken } from '../../../helpers'
-import { buildFileAttachments, getFileAttachmentProperty } from '../../helpers/file-attachments'
 import {
   buildEnhancedEmbed,
   executeV2Operation,
@@ -10,6 +9,7 @@ import {
   getEnhancedEmbedProperties,
   updateDisplayOptions,
 } from '../../helpers'
+import { buildFileAttachments } from '../../helpers/file-attachments'
 
 export const properties = updateDisplayOptions(
   {

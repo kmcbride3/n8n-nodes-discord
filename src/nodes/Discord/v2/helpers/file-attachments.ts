@@ -82,7 +82,7 @@ export async function buildFileAttachments(
       }
 
       const builder = new AttachmentBuilder(attachment, { name: fileName })
-      
+
       if (file.description) {
         builder.setDescription(file.description)
       }
