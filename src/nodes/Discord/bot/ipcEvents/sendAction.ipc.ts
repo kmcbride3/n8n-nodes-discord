@@ -71,7 +71,11 @@ export default function (ipc: typeof Ipc, client: Client) {
                   if (message?.delete) {
                     let retryCount = 0
                     const retry = async () => {
-                      if (executionMatching.placeholderId && state.placeholderWaiting.get(executionMatching.placeholderId) && retryCount < 10) {
+                      if (
+                        executionMatching.placeholderId &&
+                        state.placeholderWaiting.get(executionMatching.placeholderId) &&
+                        retryCount < 10
+                      ) {
                         retryCount++
                         setTimeout(() => retry(), 300)
                       } else {

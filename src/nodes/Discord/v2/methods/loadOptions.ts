@@ -1,11 +1,7 @@
 import type { ILoadOptionsFunctions, INodePropertyOptions } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
-import {
-  getChannelsForLoadOptions,
-  getGuildsForLoadOptions,
-  getRolesForLoadOptions,
-} from '../../helpers/loadOptions'
+import { getChannelsForLoadOptions, getGuildsForLoadOptions, getRolesForLoadOptions } from '../../helpers/loadOptions'
 
 /**
  * Load channel options for Discord V2 nodes

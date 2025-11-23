@@ -45,6 +45,15 @@ export type TriggerType =
   | 'userRoleRemoved'
 
 /**
+ * Valid interaction trigger types for Discord Interaction node
+ */
+export type InteractionTriggerType =
+  | 'buttonInteraction'
+  | 'selectMenuInteraction'
+  | 'modalInteraction'
+  | 'commandInteraction'
+
+/**
  * Required intents for each trigger type
  * Uses Discord.js GatewayIntentBits for type safety
  */
@@ -72,6 +81,17 @@ export const TRIGGER_INTENT_REQUIREMENTS: Record<TriggerType, number[]> = {
   userNickUpdated: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   userRoleAdded: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   userRoleRemoved: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+}
+
+/**
+ * Required intents for interaction trigger types
+ * All interaction types require Guilds intent at minimum
+ */
+export const INTERACTION_TRIGGER_INTENT_REQUIREMENTS: Record<InteractionTriggerType, number[]> = {
+  buttonInteraction: [GatewayIntentBits.Guilds],
+  selectMenuInteraction: [GatewayIntentBits.Guilds],
+  modalInteraction: [GatewayIntentBits.Guilds],
+  commandInteraction: [GatewayIntentBits.Guilds],
 }
 
 /**

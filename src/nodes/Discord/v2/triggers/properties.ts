@@ -262,7 +262,16 @@ export function getAllProperties(): INodeProperties[] {
           description: 'Pattern to match against message content',
           displayOptions: {
             show: {
-              contentMatchType: ['contains', 'exact', 'startsWith', 'endsWith', 'regex', 'mentionsUser', 'mentionsRole', 'mentionsChannel'],
+              contentMatchType: [
+                'contains',
+                'exact',
+                'startsWith',
+                'endsWith',
+                'regex',
+                'mentionsUser',
+                'mentionsRole',
+                'mentionsChannel',
+              ],
             },
           },
         },

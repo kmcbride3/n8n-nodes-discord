@@ -104,48 +104,48 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
           const content = caseSensitive ? message.content : message.content.toLowerCase()
           const searchPattern = caseSensitive ? pattern : pattern.toLowerCase()
 
-        switch (matchType) {
-          case 'contains':
-            if (!content.includes(searchPattern)) return false
-            break
-          case 'exact':
-            if (content !== searchPattern) return false
-            break
-          case 'startsWith':
-            if (!content.startsWith(searchPattern)) return false
-            break
-          case 'endsWith':
-            if (!content.endsWith(searchPattern)) return false
-            break
-          case 'regex':
-            try {
-              const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
-              if (!regex.test(message.content)) return false
-            } catch {
-              return false // Invalid regex
-            }
-            break
-          case 'mentionsUser':
-            // Support both <@123456789> format and plain ID
-            const userId = pattern.replace(/[<@!>]/g, '')
-            if (!message.mentions.users.has(userId)) return false
-            break
-          case 'mentionsRole':
-            // Support both <@&123456789> format, plain ID, and role name
-            const rolePattern = pattern.replace(/[<@&>]/g, '')
-            const hasRoleMention = message.mentions.roles.some(
-              (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
-            )
-            if (!hasRoleMention) return false
-            break
-          case 'mentionsChannel':
-            // Support both <#123456789> format and plain ID
-            const channelId = pattern.replace(/[<#>]/g, '')
-            if (!message.mentions.channels.has(channelId)) return false
-            break
+          switch (matchType) {
+            case 'contains':
+              if (!content.includes(searchPattern)) return false
+              break
+            case 'exact':
+              if (content !== searchPattern) return false
+              break
+            case 'startsWith':
+              if (!content.startsWith(searchPattern)) return false
+              break
+            case 'endsWith':
+              if (!content.endsWith(searchPattern)) return false
+              break
+            case 'regex':
+              try {
+                const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
+                if (!regex.test(message.content)) return false
+              } catch {
+                return false // Invalid regex
+              }
+              break
+            case 'mentionsUser':
+              // Support both <@123456789> format and plain ID
+              const userId = pattern.replace(/[<@!>]/g, '')
+              if (!message.mentions.users.has(userId)) return false
+              break
+            case 'mentionsRole':
+              // Support both <@&123456789> format, plain ID, and role name
+              const rolePattern = pattern.replace(/[<@&>]/g, '')
+              const hasRoleMention = message.mentions.roles.some(
+                (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
+              )
+              if (!hasRoleMention) return false
+              break
+            case 'mentionsChannel':
+              // Support both <#123456789> format and plain ID
+              const channelId = pattern.replace(/[<#>]/g, '')
+              if (!message.mentions.channels.has(channelId)) return false
+              break
+          }
         }
       }
-    }
 
       // Attachment filtering
       const hasAttachments = messageFilters.hasAttachments || 'any'
@@ -217,45 +217,45 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
           const content = caseSensitive ? fullMessage.content : fullMessage.content.toLowerCase()
           const searchPattern = caseSensitive ? pattern : pattern.toLowerCase()
 
-        switch (matchType) {
-          case 'contains':
-            if (!content.includes(searchPattern)) return false
-            break
-          case 'exact':
-            if (content !== searchPattern) return false
-            break
-          case 'startsWith':
-            if (!content.startsWith(searchPattern)) return false
-            break
-          case 'endsWith':
-            if (!content.endsWith(searchPattern)) return false
-            break
-          case 'regex':
-            try {
-              const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
-              if (!regex.test(fullMessage.content)) return false
-            } catch {
-              return false
-            }
-            break
-          case 'mentionsUser':
-            const userId = pattern.replace(/[<@!>]/g, '')
-            if (!fullMessage.mentions.users.has(userId)) return false
-            break
-          case 'mentionsRole':
-            const rolePattern = pattern.replace(/[<@&>]/g, '')
-            const hasRoleMention = fullMessage.mentions.roles.some(
-              (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
-            )
-            if (!hasRoleMention) return false
-            break
-          case 'mentionsChannel':
-            const channelId = pattern.replace(/[<#>]/g, '')
-            if (!fullMessage.mentions.channels.has(channelId)) return false
-            break
+          switch (matchType) {
+            case 'contains':
+              if (!content.includes(searchPattern)) return false
+              break
+            case 'exact':
+              if (content !== searchPattern) return false
+              break
+            case 'startsWith':
+              if (!content.startsWith(searchPattern)) return false
+              break
+            case 'endsWith':
+              if (!content.endsWith(searchPattern)) return false
+              break
+            case 'regex':
+              try {
+                const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
+                if (!regex.test(fullMessage.content)) return false
+              } catch {
+                return false
+              }
+              break
+            case 'mentionsUser':
+              const userId = pattern.replace(/[<@!>]/g, '')
+              if (!fullMessage.mentions.users.has(userId)) return false
+              break
+            case 'mentionsRole':
+              const rolePattern = pattern.replace(/[<@&>]/g, '')
+              const hasRoleMention = fullMessage.mentions.roles.some(
+                (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
+              )
+              if (!hasRoleMention) return false
+              break
+            case 'mentionsChannel':
+              const channelId = pattern.replace(/[<#>]/g, '')
+              if (!fullMessage.mentions.channels.has(channelId)) return false
+              break
+          }
         }
       }
-    }
 
       const hasAttachments = messageFilters.hasAttachments || 'any'
       if (hasAttachments === 'with' && fullMessage.attachments.size === 0) return false
@@ -325,45 +325,45 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
           const content = caseSensitive ? message.content : message.content.toLowerCase()
           const searchPattern = caseSensitive ? pattern : pattern.toLowerCase()
 
-        switch (matchType) {
-          case 'contains':
-            if (!content.includes(searchPattern)) return false
-            break
-          case 'exact':
-            if (content !== searchPattern) return false
-            break
-          case 'startsWith':
-            if (!content.startsWith(searchPattern)) return false
-            break
-          case 'endsWith':
-            if (!content.endsWith(searchPattern)) return false
-            break
-          case 'regex':
-            try {
-              const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
-              if (!regex.test(message.content)) return false
-            } catch {
-              return false
-            }
-            break
-          case 'mentionsUser':
-            const userId = pattern.replace(/[<@!>]/g, '')
-            if (!message.mentions.users.has(userId)) return false
-            break
-          case 'mentionsRole':
-            const rolePattern = pattern.replace(/[<@&>]/g, '')
-            const hasRoleMention = message.mentions.roles.some(
-              (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
-            )
-            if (!hasRoleMention) return false
-            break
-          case 'mentionsChannel':
-            const channelId = pattern.replace(/[<#>]/g, '')
-            if (!message.mentions.channels.has(channelId)) return false
-            break
+          switch (matchType) {
+            case 'contains':
+              if (!content.includes(searchPattern)) return false
+              break
+            case 'exact':
+              if (content !== searchPattern) return false
+              break
+            case 'startsWith':
+              if (!content.startsWith(searchPattern)) return false
+              break
+            case 'endsWith':
+              if (!content.endsWith(searchPattern)) return false
+              break
+            case 'regex':
+              try {
+                const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
+                if (!regex.test(message.content)) return false
+              } catch {
+                return false
+              }
+              break
+            case 'mentionsUser':
+              const userId = pattern.replace(/[<@!>]/g, '')
+              if (!message.mentions.users.has(userId)) return false
+              break
+            case 'mentionsRole':
+              const rolePattern = pattern.replace(/[<@&>]/g, '')
+              const hasRoleMention = message.mentions.roles.some(
+                (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
+              )
+              if (!hasRoleMention) return false
+              break
+            case 'mentionsChannel':
+              const channelId = pattern.replace(/[<#>]/g, '')
+              if (!message.mentions.channels.has(channelId)) return false
+              break
+          }
         }
       }
-    }
 
       const hasAttachments = messageFilters.hasAttachments || 'any'
       if (hasAttachments === 'with' && message.attachments.size === 0) return false

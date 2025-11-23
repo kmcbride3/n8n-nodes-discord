@@ -52,7 +52,8 @@
     ],
     "nodes": [
       "dist/nodes/Discord/Discord.node.js",
-      "dist/nodes/Discord/DiscordTrigger.node.js"
+      "dist/nodes/Discord/DiscordTrigger.node.js",
+      "dist/nodes/Discord/DiscordInteraction.node.js"
     ]
   },
   "pnpm": {
