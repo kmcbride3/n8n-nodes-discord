@@ -41,6 +41,12 @@ class MockDiscordClient extends EventEmitter {
 
   public uptime: number | null = null
 
+  constructor() {
+    super()
+    // Set to 0 (unlimited) to prevent warnings in stress tests that attach many listeners
+    this.setMaxListeners(0)
+  }
+
   public isReady(): boolean {
     return this.uptime !== null
   }

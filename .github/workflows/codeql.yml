@@ -14,8 +14,18 @@ name: "CodeQL Advanced"
 on:
   push:
     branches: [ "main", "experimental" ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
   pull_request:
     branches: [ "main", "experimental" ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
   schedule:
     - cron: '35 4 * * 6'
   workflow_dispatch:
