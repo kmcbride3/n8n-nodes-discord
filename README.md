@@ -132,7 +132,6 @@ Now you will be able to use the **Discord Trigger** and **Discord Send** nodes o
 - **Send to the trigger channel**: If active, the message produced will be sent to the same channel where the workflow was triggered (but not replace the placeholder if there is one).
 - **Send to**: Let you specify the text channels where you want to send the message. Your credentials must be set and the bot running, you also need at least one text channel available. If you do not meet these requirements, make the changes then close and reopen the modal (the channels list is loaded when the modal opens).
 - **Type**: Let you choose the type of interaction you want to perform.
-
   - **Message**: This is the default type, it allows you to send a message without requiring any form of response.
     - **Content**: Displayed text message.
     - **Embed**: If active it will enable the creation of rich messages like this: ![](images/embed.png)
