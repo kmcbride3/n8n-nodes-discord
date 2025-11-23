@@ -26,10 +26,16 @@ export interface IDiscordCredentials {
 export type TriggerType =
   | 'message'
   | 'message_update'
+  | 'directMessage'
   | 'thread'
   | 'thread_update'
   | 'command'
   | 'interaction'
+  | 'reactionAdd'
+  | 'reactionRemove'
+  | 'roleCreate'
+  | 'roleDelete'
+  | 'roleUpdate'
   | 'userJoins'
   | 'userLeaves'
   | 'userUpdate'
@@ -45,10 +51,20 @@ export type TriggerType =
 export const TRIGGER_INTENT_REQUIREMENTS: Record<TriggerType, number[]> = {
   message: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
   message_update: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+  directMessage: [
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessageReactions,
+  ],
   thread: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   thread_update: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   command: [GatewayIntentBits.Guilds],
   interaction: [GatewayIntentBits.Guilds],
+  reactionAdd: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessageReactions],
+  reactionRemove: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessageReactions],
+  roleCreate: [GatewayIntentBits.Guilds],
+  roleDelete: [GatewayIntentBits.Guilds],
+  roleUpdate: [GatewayIntentBits.Guilds],
   userJoins: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   userLeaves: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   userUpdate: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],

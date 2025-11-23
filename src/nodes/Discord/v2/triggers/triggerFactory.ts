@@ -43,13 +43,16 @@ export async function createDiscordTrigger(this: ITriggerFunctions, triggerKey: 
   const credentials = await getDiscordCredentials(this)
   const client = await getDiscordClientWithErrorHandling.call(this, credentials, config.triggerType)
 
-  // Create event handler using configuration
+  // Create event handler using configuration (supports async filters for partial data fetching)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handler = (...eventArgs: any[]) => {
+  const handler = async (...eventArgs: any[]) => {
     try {
-      // Apply filter if defined
-      if (config.filter && !config.filter.call(this, ...eventArgs)) {
-        return // Skip this event
+      // Apply filter if defined (supports both sync and async filters)
+      if (config.filter) {
+        const shouldSkip = await config.filter.call(this, ...eventArgs)
+        if (!shouldSkip) {
+          return // Skip this event
+        }
       }
 
       // Transform event data using configuration

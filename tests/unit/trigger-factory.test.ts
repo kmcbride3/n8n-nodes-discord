@@ -78,6 +78,8 @@ describe('Trigger Factory and Registry', () => {
         if (param === 'guildId') return ''
         if (param === 'name') return 'testCommand'
         if (param === 'channelIds') return []
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        if (param === 'messageFilters') return { contentMatchType: 'any', hasAttachments: 'any' }
         return undefined
       }),
       emit: jest.fn(),
@@ -95,10 +97,16 @@ describe('Trigger Factory and Registry', () => {
       const expectedTriggers = [
         'message',
         'message_update',
+        'directMessage',
         'thread',
         'thread_update',
         'command',
         'interaction',
+        'reactionAdd',
+        'reactionRemove',
+        'roleCreate',
+        'roleDelete',
+        'roleUpdate',
         'userJoins',
         'userLeaves',
         'userUpdate',
@@ -113,8 +121,8 @@ describe('Trigger Factory and Registry', () => {
         expect(TRIGGER_REGISTRY[trigger]).toBeDefined()
       })
 
-      // Verify we have exactly 13 triggers
-      expect(Object.keys(TRIGGER_REGISTRY)).toHaveLength(13)
+      // Verify we have exactly 19 triggers (13 original + 6 new: directMessage, reactionAdd, reactionRemove, roleCreate, roleDelete, roleUpdate)
+      expect(Object.keys(TRIGGER_REGISTRY)).toHaveLength(19)
     })
 
     test('each trigger should have required configuration', () => {
@@ -210,12 +218,13 @@ describe('Trigger Factory and Registry', () => {
   })
 
   describe('Event Filtering', () => {
-    test('message trigger should filter bot messages', () => {
+    test('message trigger should filter bot messages by default (ignoreAllBots)', () => {
       const config = TRIGGER_REGISTRY['message']
 
       // Mock bot message
       const botMessage = {
-        author: { bot: true },
+        author: { bot: true, id: 'otherbot456' },
+        client: { user: { id: 'bot123' } },
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -230,10 +239,114 @@ describe('Trigger Factory and Registry', () => {
       // Mock user message
       const userMessage = {
         author: { bot: false },
+        client: { user: { id: 'bot123' } },
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const shouldProcess = config.filter?.call(mockContext, userMessage as any)
+
+      expect(shouldProcess).toBe(true)
+    })
+
+    test('message trigger with ignoreSelf should allow other bots', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      // Update mock to use ignoreSelf behavior
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'type') return 'message'
+        if (param === 'botFilters') return { botBehavior: 'ignoreSelf' }
+        return undefined
+      })
+
+      // Mock message from another bot
+      const otherBotMessage = {
+        author: { bot: true, id: 'otherbot456' },
+        client: { user: { id: 'bot123' } },
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const shouldProcess = config.filter?.call(mockContext, otherBotMessage as any)
+
+      expect(shouldProcess).toBe(true)
+    })
+
+    test('message trigger with ignoreSelf should filter own messages', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      // Update mock to use ignoreSelf behavior
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'type') return 'message'
+        if (param === 'botFilters') return { botBehavior: 'ignoreSelf' }
+        return undefined
+      })
+
+      // Mock message from self
+      const selfMessage = {
+        author: { bot: true, id: 'bot123' },
+        client: { user: { id: 'bot123' } },
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const shouldProcess = config.filter?.call(mockContext, selfMessage as any)
+
+      expect(shouldProcess).toBe(false)
+    })
+
+    test('message trigger with ignoreOthers should only allow self and users', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      // Update mock to use ignoreOthers behavior
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'type') return 'message'
+        if (param === 'botFilters') return { botBehavior: 'ignoreOthers' }
+        if (param === 'messageFilters') return { contentMatchType: 'any', hasAttachments: 'any' }
+        return undefined
+      })
+
+      // Mock message from self
+      const selfMessage = {
+        author: { bot: true, id: 'bot123' },
+        client: { user: { id: 'bot123' } },
+      }
+
+      // Mock message from another bot
+      const otherBotMessage = {
+        author: { bot: true, id: 'otherbot456' },
+        client: { user: { id: 'bot123' } },
+      }
+
+      // Mock message from user
+      const userMessage = {
+        author: { bot: false, id: 'user789' },
+        client: { user: { id: 'bot123' } },
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(config.filter?.call(mockContext, selfMessage as any)).toBe(true)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(config.filter?.call(mockContext, otherBotMessage as any)).toBe(false)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(config.filter?.call(mockContext, userMessage as any)).toBe(true)
+    })
+
+    test('message trigger with allowAllBots should allow all bots', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      // Update mock to use allowAllBots behavior
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'type') return 'message'
+        if (param === 'botFilters') return { botBehavior: 'allowAllBots' }
+        return undefined
+      })
+
+      // Mock message from another bot
+      const botMessage = {
+        author: { bot: true, id: 'otherbot456' },
+        client: { user: { id: 'bot123' } },
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const shouldProcess = config.filter?.call(mockContext, botMessage as any)
 
       expect(shouldProcess).toBe(true)
     })
@@ -261,6 +374,197 @@ describe('Trigger Factory and Registry', () => {
       expect(config.filter?.call(mockContext, correctGuildMember as any)).toBe(true)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(config.filter?.call(mockContext, wrongGuildMember as any)).toBe(false)
+    })
+  })
+
+  describe('Content Pattern Matching', () => {
+    const createMockMessage = (content: string, mentions: any = {}) => ({
+      author: { bot: false },
+      client: { user: { id: 'bot123' } },
+      content,
+      attachments: { size: 0 },
+      mentions: {
+        users: new Map(mentions.users || []),
+        roles: mentions.roles || [],
+        channels: new Map(mentions.channels || []),
+        has: jest.fn((user: any) => mentions.users?.some(([id]: [string]) => id === user?.id) || false),
+      },
+    })
+
+    test('message trigger with contains match should filter correctly', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'messageFilters') return { contentMatchType: 'contains', contentMatchPattern: 'hello' }
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        return undefined
+      })
+
+      const matchingMessage = createMockMessage('Hello world!')
+      const nonMatchingMessage = createMockMessage('Goodbye world!')
+
+      expect(config.filter?.call(mockContext, matchingMessage as any)).toBe(true)
+      expect(config.filter?.call(mockContext, nonMatchingMessage as any)).toBe(false)
+    })
+
+    test('message trigger with exact match should be case-insensitive by default', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'messageFilters') return { contentMatchType: 'exact', contentMatchPattern: 'hello world' }
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        return undefined
+      })
+
+      const matchingMessage = createMockMessage('Hello World')
+      const nonMatchingMessage = createMockMessage('Hello World!')
+
+      expect(config.filter?.call(mockContext, matchingMessage as any)).toBe(true)
+      expect(config.filter?.call(mockContext, nonMatchingMessage as any)).toBe(false)
+    })
+
+    test('message trigger with startsWith should work correctly', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'messageFilters') return { contentMatchType: 'startsWith', contentMatchPattern: '!command' }
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        return undefined
+      })
+
+      const matchingMessage = createMockMessage('!command arg1 arg2')
+      const nonMatchingMessage = createMockMessage('This is !command')
+
+      expect(config.filter?.call(mockContext, matchingMessage as any)).toBe(true)
+      expect(config.filter?.call(mockContext, nonMatchingMessage as any)).toBe(false)
+    })
+
+    test('message trigger with endsWith should work correctly', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'messageFilters') return { contentMatchType: 'endsWith', contentMatchPattern: 'please' }
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        return undefined
+      })
+
+      const matchingMessage = createMockMessage('Help me please')
+      const nonMatchingMessage = createMockMessage('Please help me')
+
+      expect(config.filter?.call(mockContext, matchingMessage as any)).toBe(true)
+      expect(config.filter?.call(mockContext, nonMatchingMessage as any)).toBe(false)
+    })
+
+    test('message trigger with regex should work correctly', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'messageFilters') return { contentMatchType: 'regex', contentMatchPattern: '^!\\w+' }
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        return undefined
+      })
+
+      const matchingMessage = createMockMessage('!help')
+      const nonMatchingMessage = createMockMessage('help!')
+
+      expect(config.filter?.call(mockContext, matchingMessage as any)).toBe(true)
+      expect(config.filter?.call(mockContext, nonMatchingMessage as any)).toBe(false)
+    })
+
+    test('message trigger with mentionsUser should work with ID', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'messageFilters') return { contentMatchType: 'mentionsUser', contentMatchPattern: '123456789' }
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        return undefined
+      })
+
+      const matchingMessage = createMockMessage('Hello <@123456789>', {
+        users: [['123456789', { id: '123456789', username: 'user' }]],
+      })
+      const nonMatchingMessage = createMockMessage('Hello <@987654321>', {
+        users: [['987654321', { id: '987654321', username: 'other' }]],
+      })
+
+      expect(config.filter?.call(mockContext, matchingMessage as any)).toBe(true)
+      expect(config.filter?.call(mockContext, nonMatchingMessage as any)).toBe(false)
+    })
+
+    test('message trigger with mentionsBot should work correctly', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'messageFilters') return { contentMatchType: 'mentionsBot' }
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        return undefined
+      })
+
+      const matchingMessage = createMockMessage('Hello <@bot123>', {
+        users: [['bot123', { id: 'bot123', username: 'bot' }]],
+      })
+      matchingMessage.mentions.has = jest.fn((user: any) => user?.id === 'bot123')
+
+      const nonMatchingMessage = createMockMessage('Hello there')
+      nonMatchingMessage.mentions.has = jest.fn((user: any) => false)
+
+      expect(config.filter?.call(mockContext, matchingMessage as any)).toBe(true)
+      expect(config.filter?.call(mockContext, nonMatchingMessage as any)).toBe(false)
+    })
+
+    test('message trigger with case-sensitive matching', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'messageFilters')
+          return { contentMatchType: 'contains', contentMatchPattern: 'Hello', caseSensitive: true }
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        return undefined
+      })
+
+      const matchingMessage = createMockMessage('Hello world')
+      const nonMatchingMessage = createMockMessage('hello world')
+
+      expect(config.filter?.call(mockContext, matchingMessage as any)).toBe(true)
+      expect(config.filter?.call(mockContext, nonMatchingMessage as any)).toBe(false)
+    })
+
+    test('message trigger with attachment filter - with attachments', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'messageFilters') return { contentMatchType: 'any', hasAttachments: 'with' }
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        return undefined
+      })
+
+      const withAttachments = createMockMessage('Check this out')
+      withAttachments.attachments = { size: 1 }
+
+      const withoutAttachments = createMockMessage('Just text')
+      withoutAttachments.attachments = { size: 0 }
+
+      expect(config.filter?.call(mockContext, withAttachments as any)).toBe(true)
+      expect(config.filter?.call(mockContext, withoutAttachments as any)).toBe(false)
+    })
+
+    test('message trigger with attachment filter - without attachments', () => {
+      const config = TRIGGER_REGISTRY['message']
+
+      ;(mockContext.getNodeParameter as jest.Mock).mockImplementation((param: string) => {
+        if (param === 'messageFilters') return { contentMatchType: 'any', hasAttachments: 'without' }
+        if (param === 'botFilters') return { botBehavior: 'ignoreAllBots' }
+        return undefined
+      })
+
+      const withAttachments = createMockMessage('Check this out')
+      withAttachments.attachments = { size: 1 }
+
+      const withoutAttachments = createMockMessage('Just text')
+      withoutAttachments.attachments = { size: 0 }
+
+      expect(config.filter?.call(mockContext, withAttachments as any)).toBe(false)
+      expect(config.filter?.call(mockContext, withoutAttachments as any)).toBe(true)
     })
   })
 
@@ -367,8 +671,8 @@ describe('Trigger Factory and Registry', () => {
       const mockClient = Client()
 
       // Capture the event handler
-      let eventHandler: ((payload: unknown) => void) | undefined
-      ;(mockClient.on as jest.Mock).mockImplementation((event: string, handler: (payload: unknown) => void) => {
+      let eventHandler: ((payload: unknown) => void | Promise<void>) | undefined
+      ;(mockClient.on as jest.Mock).mockImplementation((event: string, handler: (payload: unknown) => void | Promise<void>) => {
         if (event === 'messageCreate') {
           eventHandler = handler
         }
@@ -382,10 +686,11 @@ describe('Trigger Factory and Registry', () => {
         channelId: 'channel123',
         guildId: 'guild123',
         createdAt: new Date('2025-01-01T00:00:00Z'),
+        client: { user: { id: 'bot123' } },
       }
 
-      // Call the event handler
-      eventHandler?.(mockMessage)
+      // Call the event handler (now async)
+      await eventHandler?.(mockMessage)
 
       // Verify emit was called with transformed data
       expect(mockContext.emit).toHaveBeenCalledWith([

@@ -27,11 +27,14 @@ import {
 jest.mock('discord.js', () => {
   // Define intents inside mock factory to avoid hoisting issues
   const mockIntents = {
-    Guilds: 1 << 0,
-    GuildMembers: 1 << 1,
-    GuildMessages: 1 << 9,
-    MessageContent: 1 << 15,
-    GuildPresences: 1 << 8,
+    Guilds: 1 << 0, // 1
+    GuildMembers: 1 << 1, // 2
+    GuildMessages: 1 << 9, // 512
+    MessageContent: 1 << 15, // 32768
+    GuildPresences: 1 << 8, // 256
+    DirectMessages: 1 << 12, // 4096
+    DirectMessageReactions: 1 << 13, // 8192
+    GuildMessageReactions: 1 << 10, // 1024
   }
 
   // Factory function to create fresh mock clients for each instantiation
@@ -52,6 +55,9 @@ jest.mock('discord.js', () => {
         mockIntents.MessageContent,
         mockIntents.GuildMembers,
         mockIntents.GuildPresences,
+        mockIntents.DirectMessages,
+        mockIntents.DirectMessageReactions,
+        mockIntents.GuildMessageReactions,
       ]),
     },
   })
@@ -328,14 +334,20 @@ describe('Discord V2 Trigger Helpers - New Optimization Features', () => {
   })
 
   describe('TriggerType Type Safety', () => {
-    test('should define all 13 trigger types', () => {
+    test('should define all 19 trigger types', () => {
       const expectedTriggerTypes: TriggerType[] = [
         'message',
         'message_update',
+        'directMessage',
         'thread',
         'thread_update',
         'command',
         'interaction',
+        'reactionAdd',
+        'reactionRemove',
+        'roleCreate',
+        'roleDelete',
+        'roleUpdate',
         'userJoins',
         'userLeaves',
         'userUpdate',
@@ -350,8 +362,8 @@ describe('Discord V2 Trigger Helpers - New Optimization Features', () => {
         expect(TRIGGER_INTENT_REQUIREMENTS).toHaveProperty(type)
       })
 
-      // Verify we have exactly 13 types
-      expect(Object.keys(TRIGGER_INTENT_REQUIREMENTS)).toHaveLength(13)
+      // Verify we have exactly 19 types (13 original + 6 new: directMessage, reactionAdd, reactionRemove, roleCreate, roleDelete, roleUpdate)
+      expect(Object.keys(TRIGGER_INTENT_REQUIREMENTS)).toHaveLength(19)
     })
 
     test('should ensure all trigger types map to valid intents', () => {

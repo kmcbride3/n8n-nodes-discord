@@ -16,10 +16,15 @@ import type {
   GuildMember,
   Interaction,
   Message,
+  MessageReaction,
   PartialGuildMember,
   PartialMessage,
+  PartialMessageReaction,
+  PartialUser,
   Presence,
+  Role,
   ThreadChannel,
+  User,
 } from 'discord.js'
 import type { ITriggerFunctions } from 'n8n-workflow'
 
@@ -39,9 +44,9 @@ export interface TriggerConfig {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   transformEvent: (this: ITriggerFunctions, ...eventArgs: any[]) => Record<string, unknown> | null
 
-  /** Optional filter to skip certain events */
+  /** Optional filter to skip certain events (supports async for partial data fetching) */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  filter?: (this: ITriggerFunctions, ...eventArgs: any[]) => boolean
+  filter?: (this: ITriggerFunctions, ...eventArgs: any[]) => boolean | Promise<boolean>
 }
 
 /**
@@ -57,8 +62,97 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
     triggerType: 'message',
     discordEvent: 'messageCreate',
     filter(message: Message) {
-      // Skip bot messages
-      return !message.author.bot
+      // Apply bot filtering based on user configuration
+      const botFilters = this.getNodeParameter('botFilters', 0, {}) as {
+        botBehavior?: 'ignoreAllBots' | 'ignoreSelf' | 'ignoreOthers' | 'allowAllBots'
+      }
+      const botBehavior = botFilters.botBehavior || 'ignoreAllBots'
+
+      if (message.author.bot) {
+        const selfId = message.client.user?.id
+        switch (botBehavior) {
+          case 'ignoreAllBots':
+            return false // Skip all bot messages
+          case 'ignoreSelf':
+            return message.author.id !== selfId // Skip only this bot's messages
+          case 'ignoreOthers':
+            return message.author.id === selfId // Only trigger on this bot's messages
+          case 'allowAllBots':
+            return true // Allow all bot messages
+        }
+      }
+
+      // Apply message filters
+      const messageFilters = this.getNodeParameter('messageFilters', 0, {}) as {
+        contentMatchType?: string
+        contentMatchPattern?: string
+        caseSensitive?: boolean
+        hasAttachments?: 'any' | 'with' | 'without'
+      }
+
+      // Content matching
+      const matchType = messageFilters.contentMatchType || 'any'
+      const pattern = messageFilters.contentMatchPattern || ''
+      const caseSensitive = messageFilters.caseSensitive || false
+
+      if (matchType !== 'any') {
+        // mentionsBot doesn't require a pattern
+        if (matchType === 'mentionsBot') {
+          if (!message.mentions.has(message.client.user!)) return false
+        } else if (pattern) {
+          // All other match types require a pattern
+          const content = caseSensitive ? message.content : message.content.toLowerCase()
+          const searchPattern = caseSensitive ? pattern : pattern.toLowerCase()
+
+        switch (matchType) {
+          case 'contains':
+            if (!content.includes(searchPattern)) return false
+            break
+          case 'exact':
+            if (content !== searchPattern) return false
+            break
+          case 'startsWith':
+            if (!content.startsWith(searchPattern)) return false
+            break
+          case 'endsWith':
+            if (!content.endsWith(searchPattern)) return false
+            break
+          case 'regex':
+            try {
+              const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
+              if (!regex.test(message.content)) return false
+            } catch {
+              return false // Invalid regex
+            }
+            break
+          case 'mentionsUser':
+            // Support both <@123456789> format and plain ID
+            const userId = pattern.replace(/[<@!>]/g, '')
+            if (!message.mentions.users.has(userId)) return false
+            break
+          case 'mentionsRole':
+            // Support both <@&123456789> format, plain ID, and role name
+            const rolePattern = pattern.replace(/[<@&>]/g, '')
+            const hasRoleMention = message.mentions.roles.some(
+              (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
+            )
+            if (!hasRoleMention) return false
+            break
+          case 'mentionsChannel':
+            // Support both <#123456789> format and plain ID
+            const channelId = pattern.replace(/[<#>]/g, '')
+            if (!message.mentions.channels.has(channelId)) return false
+            break
+        }
+      }
+    }
+
+      // Attachment filtering
+      const hasAttachments = messageFilters.hasAttachments || 'any'
+      if (hasAttachments === 'with' && message.attachments.size === 0) return false
+      if (hasAttachments === 'without' && message.attachments.size > 0) return false
+
+      return true
     },
     transformEvent(message: Message) {
       return {
@@ -77,8 +171,97 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
     triggerType: 'message_update',
     discordEvent: 'messageUpdate',
     filter(oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage) {
-      // Skip partial messages and bot messages
-      return !newMessage.partial && !newMessage.author?.bot
+      // Skip partial messages
+      if (newMessage.partial) return false
+
+      const fullMessage = newMessage as Message
+
+      // Apply bot filtering based on user configuration
+      const botFilters = this.getNodeParameter('botFilters', 0, {}) as {
+        botBehavior?: 'ignoreAllBots' | 'ignoreSelf' | 'ignoreOthers' | 'allowAllBots'
+      }
+      const botBehavior = botFilters.botBehavior || 'ignoreAllBots'
+
+      if (fullMessage.author?.bot) {
+        const selfId = fullMessage.client.user?.id
+        switch (botBehavior) {
+          case 'ignoreAllBots':
+            return false
+          case 'ignoreSelf':
+            return fullMessage.author.id !== selfId
+          case 'ignoreOthers':
+            return fullMessage.author.id === selfId
+          case 'allowAllBots':
+            return true
+        }
+      }
+
+      // Apply message filters (same logic as message trigger)
+      const messageFilters = this.getNodeParameter('messageFilters', 0, {}) as {
+        contentMatchType?: string
+        contentMatchPattern?: string
+        caseSensitive?: boolean
+        hasAttachments?: 'any' | 'with' | 'without'
+      }
+
+      const matchType = messageFilters.contentMatchType || 'any'
+      const pattern = messageFilters.contentMatchPattern || ''
+      const caseSensitive = messageFilters.caseSensitive || false
+
+      if (matchType !== 'any') {
+        // mentionsBot doesn't require a pattern
+        if (matchType === 'mentionsBot') {
+          if (!fullMessage.mentions.has(fullMessage.client.user!)) return false
+        } else if (pattern) {
+          // All other match types require a pattern
+          const content = caseSensitive ? fullMessage.content : fullMessage.content.toLowerCase()
+          const searchPattern = caseSensitive ? pattern : pattern.toLowerCase()
+
+        switch (matchType) {
+          case 'contains':
+            if (!content.includes(searchPattern)) return false
+            break
+          case 'exact':
+            if (content !== searchPattern) return false
+            break
+          case 'startsWith':
+            if (!content.startsWith(searchPattern)) return false
+            break
+          case 'endsWith':
+            if (!content.endsWith(searchPattern)) return false
+            break
+          case 'regex':
+            try {
+              const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
+              if (!regex.test(fullMessage.content)) return false
+            } catch {
+              return false
+            }
+            break
+          case 'mentionsUser':
+            const userId = pattern.replace(/[<@!>]/g, '')
+            if (!fullMessage.mentions.users.has(userId)) return false
+            break
+          case 'mentionsRole':
+            const rolePattern = pattern.replace(/[<@&>]/g, '')
+            const hasRoleMention = fullMessage.mentions.roles.some(
+              (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
+            )
+            if (!hasRoleMention) return false
+            break
+          case 'mentionsChannel':
+            const channelId = pattern.replace(/[<#>]/g, '')
+            if (!fullMessage.mentions.channels.has(channelId)) return false
+            break
+        }
+      }
+    }
+
+      const hasAttachments = messageFilters.hasAttachments || 'any'
+      if (hasAttachments === 'with' && fullMessage.attachments.size === 0) return false
+      if (hasAttachments === 'without' && fullMessage.attachments.size > 0) return false
+
+      return true
     },
     transformEvent(oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage) {
       const fullMessage = newMessage as Message
@@ -90,6 +273,228 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         channelId: fullMessage.channelId,
         guildId: fullMessage.guildId,
         editedTimestamp: fullMessage.editedAt?.toISOString() || new Date().toISOString(),
+      }
+    },
+  },
+
+  directMessage: {
+    triggerType: 'directMessage',
+    discordEvent: 'messageCreate',
+    filter(message: Message) {
+      // Only trigger on DM messages (not guild messages)
+      if (!message.channel.isDMBased()) return false
+
+      // Apply bot filtering based on user configuration
+      const botFilters = this.getNodeParameter('botFilters', 0, {}) as {
+        botBehavior?: 'ignoreAllBots' | 'ignoreSelf' | 'ignoreOthers' | 'allowAllBots'
+      }
+      const botBehavior = botFilters.botBehavior || 'ignoreAllBots'
+
+      if (message.author.bot) {
+        const selfId = message.client.user?.id
+        switch (botBehavior) {
+          case 'ignoreAllBots':
+            return false
+          case 'ignoreSelf':
+            return message.author.id !== selfId
+          case 'ignoreOthers':
+            return message.author.id === selfId
+          case 'allowAllBots':
+            return true
+        }
+      }
+
+      // Apply message filters (same logic as message trigger)
+      const messageFilters = this.getNodeParameter('messageFilters', 0, {}) as {
+        contentMatchType?: string
+        contentMatchPattern?: string
+        caseSensitive?: boolean
+        hasAttachments?: 'any' | 'with' | 'without'
+      }
+
+      const matchType = messageFilters.contentMatchType || 'any'
+      const pattern = messageFilters.contentMatchPattern || ''
+      const caseSensitive = messageFilters.caseSensitive || false
+
+      if (matchType !== 'any') {
+        // mentionsBot doesn't require a pattern
+        if (matchType === 'mentionsBot') {
+          if (!message.mentions.has(message.client.user!)) return false
+        } else if (pattern) {
+          // All other match types require a pattern
+          const content = caseSensitive ? message.content : message.content.toLowerCase()
+          const searchPattern = caseSensitive ? pattern : pattern.toLowerCase()
+
+        switch (matchType) {
+          case 'contains':
+            if (!content.includes(searchPattern)) return false
+            break
+          case 'exact':
+            if (content !== searchPattern) return false
+            break
+          case 'startsWith':
+            if (!content.startsWith(searchPattern)) return false
+            break
+          case 'endsWith':
+            if (!content.endsWith(searchPattern)) return false
+            break
+          case 'regex':
+            try {
+              const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
+              if (!regex.test(message.content)) return false
+            } catch {
+              return false
+            }
+            break
+          case 'mentionsUser':
+            const userId = pattern.replace(/[<@!>]/g, '')
+            if (!message.mentions.users.has(userId)) return false
+            break
+          case 'mentionsRole':
+            const rolePattern = pattern.replace(/[<@&>]/g, '')
+            const hasRoleMention = message.mentions.roles.some(
+              (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
+            )
+            if (!hasRoleMention) return false
+            break
+          case 'mentionsChannel':
+            const channelId = pattern.replace(/[<#>]/g, '')
+            if (!message.mentions.channels.has(channelId)) return false
+            break
+        }
+      }
+    }
+
+      const hasAttachments = messageFilters.hasAttachments || 'any'
+      if (hasAttachments === 'with' && message.attachments.size === 0) return false
+      if (hasAttachments === 'without' && message.attachments.size > 0) return false
+
+      return true
+    },
+    transformEvent(message: Message) {
+      return {
+        messageId: message.id,
+        content: message.content,
+        authorId: message.author.id,
+        authorUsername: message.author.username,
+        authorTag: message.author.tag,
+        channelId: message.channelId,
+        timestamp: message.createdAt.toISOString(),
+        attachments: message.attachments.map((attachment) => ({
+          id: attachment.id,
+          name: attachment.name,
+          url: attachment.url,
+          size: attachment.size,
+          contentType: attachment.contentType,
+        })),
+      }
+    },
+  },
+
+  // ============================================================================
+  // REACTION TRIGGERS
+  // ============================================================================
+
+  reactionAdd: {
+    triggerType: 'reactionAdd',
+    discordEvent: 'messageReactionAdd',
+    async filter(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
+      // Fetch partial reaction if needed
+      if (reaction.partial) {
+        try {
+          await reaction.fetch()
+        } catch {
+          return false
+        }
+      }
+
+      // Apply bot filtering based on user configuration
+      const botFilters = this.getNodeParameter('botFilters', 0, {}) as {
+        botBehavior?: 'ignoreAllBots' | 'ignoreSelf' | 'ignoreOthers' | 'allowAllBots'
+      }
+      const botBehavior = botFilters.botBehavior || 'ignoreAllBots'
+
+      if (user.bot) {
+        const selfId = reaction.client.user?.id
+        switch (botBehavior) {
+          case 'ignoreAllBots':
+            return false
+          case 'ignoreSelf':
+            return user.id !== selfId
+          case 'ignoreOthers':
+            return user.id === selfId
+          case 'allowAllBots':
+            return true
+        }
+      }
+
+      return true
+    },
+    transformEvent(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
+      return {
+        emoji: reaction.emoji.name || reaction.emoji.id,
+        emojiId: reaction.emoji.id,
+        emojiAnimated: reaction.emoji.animated,
+        count: reaction.count,
+        messageId: reaction.message.id,
+        channelId: reaction.message.channelId,
+        guildId: reaction.message.guildId,
+        userId: user.id,
+        userName: user.username,
+        userTag: user.tag,
+        timestamp: new Date().toISOString(),
+      }
+    },
+  },
+
+  reactionRemove: {
+    triggerType: 'reactionRemove',
+    discordEvent: 'messageReactionRemove',
+    async filter(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
+      // Fetch partial reaction if needed
+      if (reaction.partial) {
+        try {
+          await reaction.fetch()
+        } catch {
+          return false
+        }
+      }
+
+      // Apply bot filtering based on user configuration
+      const botFilters = this.getNodeParameter('botFilters', 0, {}) as {
+        botBehavior?: 'ignoreAllBots' | 'ignoreSelf' | 'ignoreOthers' | 'allowAllBots'
+      }
+      const botBehavior = botFilters.botBehavior || 'ignoreAllBots'
+
+      if (user.bot) {
+        const selfId = reaction.client.user?.id
+        switch (botBehavior) {
+          case 'ignoreAllBots':
+            return false
+          case 'ignoreSelf':
+            return user.id !== selfId
+          case 'ignoreOthers':
+            return user.id === selfId
+          case 'allowAllBots':
+            return true
+        }
+      }
+
+      return true
+    },
+    transformEvent(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
+      return {
+        emoji: reaction.emoji.name || reaction.emoji.id,
+        emojiId: reaction.emoji.id,
+        emojiAnimated: reaction.emoji.animated,
+        count: reaction.count,
+        messageId: reaction.message.id,
+        channelId: reaction.message.channelId,
+        guildId: reaction.message.guildId,
+        userId: user.id,
+        userName: user.username,
+        userTag: user.tag,
+        timestamp: new Date().toISOString(),
       }
     },
   },
@@ -453,6 +858,105 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
           color: role.color,
           permissions: role.permissions.toString(),
         })),
+        timestamp: new Date().toISOString(),
+      }
+    },
+  },
+
+  // ============================================================================
+  // ROLE LIFECYCLE TRIGGERS
+  // ============================================================================
+
+  roleCreate: {
+    triggerType: 'roleCreate',
+    discordEvent: 'roleCreate',
+    filter(role: Role) {
+      // Filter by guild if specified
+      const guildId = this.getNodeParameter('guildId', 0) as string
+      return !guildId || role.guild.id === guildId
+    },
+    transformEvent(role: Role) {
+      return {
+        roleId: role.id,
+        roleName: role.name,
+        roleColor: role.color,
+        roleHoist: role.hoist,
+        roleMentionable: role.mentionable,
+        rolePosition: role.position,
+        rolePermissions: role.permissions.toString(),
+        guildId: role.guild.id,
+        guildName: role.guild.name,
+        timestamp: new Date().toISOString(),
+      }
+    },
+  },
+
+  roleDelete: {
+    triggerType: 'roleDelete',
+    discordEvent: 'roleDelete',
+    filter(role: Role) {
+      // Filter by guild if specified
+      const guildId = this.getNodeParameter('guildId', 0) as string
+      return !guildId || role.guild.id === guildId
+    },
+    transformEvent(role: Role) {
+      return {
+        roleId: role.id,
+        roleName: role.name,
+        roleColor: role.color,
+        roleHoist: role.hoist,
+        roleMentionable: role.mentionable,
+        rolePosition: role.position,
+        rolePermissions: role.permissions.toString(),
+        guildId: role.guild.id,
+        guildName: role.guild.name,
+        timestamp: new Date().toISOString(),
+      }
+    },
+  },
+
+  roleUpdate: {
+    triggerType: 'roleUpdate',
+    discordEvent: 'roleUpdate',
+    filter(oldRole: Role, newRole: Role) {
+      // Only trigger if meaningful properties changed
+      const hasChanges =
+        oldRole.name !== newRole.name ||
+        oldRole.color !== newRole.color ||
+        oldRole.hoist !== newRole.hoist ||
+        oldRole.mentionable !== newRole.mentionable ||
+        oldRole.permissions.bitfield !== newRole.permissions.bitfield ||
+        oldRole.position !== newRole.position
+
+      if (!hasChanges) {
+        return false
+      }
+
+      // Filter by guild if specified
+      const guildId = this.getNodeParameter('guildId', 0) as string
+      return !guildId || newRole.guild.id === guildId
+    },
+    transformEvent(oldRole: Role, newRole: Role) {
+      return {
+        roleId: newRole.id,
+        roleName: newRole.name,
+        guildId: newRole.guild.id,
+        guildName: newRole.guild.name,
+        changes: {
+          name: oldRole.name !== newRole.name ? { old: oldRole.name, new: newRole.name } : undefined,
+          color: oldRole.color !== newRole.color ? { old: oldRole.color, new: newRole.color } : undefined,
+          hoist: oldRole.hoist !== newRole.hoist ? { old: oldRole.hoist, new: newRole.hoist } : undefined,
+          mentionable:
+            oldRole.mentionable !== newRole.mentionable
+              ? { old: oldRole.mentionable, new: newRole.mentionable }
+              : undefined,
+          position:
+            oldRole.position !== newRole.position ? { old: oldRole.position, new: newRole.position } : undefined,
+          permissions:
+            oldRole.permissions.bitfield !== newRole.permissions.bitfield
+              ? { old: oldRole.permissions.toString(), new: newRole.permissions.toString() }
+              : undefined,
+        },
         timestamp: new Date().toISOString(),
       }
     },

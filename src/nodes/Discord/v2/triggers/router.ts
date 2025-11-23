@@ -38,10 +38,18 @@ export async function executeRouter(this: IExecuteFunctions): Promise<INodeExecu
     switch (type) {
       case 'message':
       case 'message_update':
+      case 'directMessage':
         // Message triggers use pure Discord.js event listeners and don't have execute methods
         throw new NodeOperationError(
           this.getNode(),
           `Message triggers are handled through Discord.js event listeners and don't support manual execution`,
+        )
+      case 'reactionAdd':
+      case 'reactionRemove':
+        // Reaction triggers use pure Discord.js event listeners and don't have execute methods
+        throw new NodeOperationError(
+          this.getNode(),
+          `Reaction triggers are handled through Discord.js event listeners and don't support manual execution`,
         )
       case 'thread':
       case 'thread_update':
@@ -49,6 +57,14 @@ export async function executeRouter(this: IExecuteFunctions): Promise<INodeExecu
         throw new NodeOperationError(
           this.getNode(),
           `Thread triggers are handled through Discord.js event listeners and don't support manual execution`,
+        )
+      case 'roleCreate':
+      case 'roleDelete':
+      case 'roleUpdate':
+        // Role triggers use pure Discord.js event listeners and don't have execute methods
+        throw new NodeOperationError(
+          this.getNode(),
+          `Role triggers are handled through Discord.js event listeners and don't support manual execution`,
         )
       case 'command':
       case 'interaction':

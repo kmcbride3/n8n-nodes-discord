@@ -130,3 +130,44 @@ export async function getRolesForLoadOptions(
     ]
   }
 }
+
+/**
+ * Get available guilds for loadOptions dropdown
+ */
+export async function getGuildsForLoadOptions(
+  this: ILoadOptionsFunctions,
+  client?: Client,
+): Promise<INodePropertyOptions[]> {
+  if (!client) {
+    return [
+      {
+        name: 'Discord client not available. Please check your credentials.',
+        value: 'error',
+      },
+    ]
+  }
+
+  try {
+    if (isClientReady(client)) {
+      // Use Discord.js client to fetch guilds
+      const guilds = await client.guilds.fetch()
+
+      return guilds.map((guild) => ({
+        name: guild.name || 'Unknown Guild',
+        value: guild.id,
+      }))
+    } else {
+      throw new NodeOperationError(
+        this.getNode(),
+        'Discord client is required for guild operations. Please ensure the Discord client is connected and ready.',
+      )
+    }
+  } catch (error) {
+    return [
+      {
+        name: `Error loading guilds: ${error}`,
+        value: 'error',
+      },
+    ]
+  }
+}
