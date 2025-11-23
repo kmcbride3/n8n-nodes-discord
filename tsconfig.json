@@ -13,6 +13,9 @@
       "node",
       "jest"
     ],
+    "paths": {
+      "n8n-workflow": ["./node_modules/n8n-workflow/dist/cjs/index.d.ts"]
+    },
     "removeComments": true,
     "useUnknownInCatchVariables": false,
     "forceConsistentCasingInFileNames": true,

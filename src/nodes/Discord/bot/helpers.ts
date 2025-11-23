@@ -1,9 +1,10 @@
 import axios from 'axios'
 import { Client, Message, TextChannel, User } from 'discord.js'
-import { hexoid } from 'hexoid'
-import { INodePropertyOptions, LoggerProxy } from 'n8n-workflow'
+import type { INodePropertyOptions } from 'n8n-workflow'
+import { LoggerProxy } from 'n8n-workflow'
 import ipc from 'node-ipc'
 
+import { generateUniqueId as generateId } from '../shared/utils/id-generation'
 import state from './state'
 
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug'
@@ -422,5 +423,5 @@ export function withTimeout<T>(promise: Promise<T>, ms: number) {
 }
 
 export function generateUniqueId(length = 12): string {
-  return hexoid(length)()
+  return generateId(length)
 }

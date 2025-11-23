@@ -1,5 +1,6 @@
 import { Client, Message, TextChannel, User } from 'discord.js'
-import { INodePropertyOptions, LoggerProxy } from 'n8n-workflow'
+import type { INodePropertyOptions } from 'n8n-workflow'
+import { LoggerProxy } from 'n8n-workflow'
 import ipc from 'node-ipc'
 
 import { executeWebhook } from '../helpers/http-client'
