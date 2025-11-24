@@ -1,0 +1,18 @@
+{
+  "node": "@kmcbride3/n8n-nodes-discord.discordGet",
+  "nodeVersion": "1.0",
+  "codexVersion": "1.0",
+  "categories": ["Messaging"],
+  "resources": {
+    "credentialDocumentation": [
+      {
+        "url": "https://docs.n8n.io/integrations/builtin/credentials/discord/"
+      }
+    ],
+    "primaryDocumentation": [
+      {
+        "url": "https://github.com/kmcbride3/n8n-nodes-discord"
+      }
+    ]
+  }
+}

@@ -15,6 +15,7 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html', 'json'],
+  coverageProvider: 'v8', // Use V8 coverage instead of babel-plugin-istanbul
   // Suppress known deprecation warnings from dependencies
   silent: false
 }

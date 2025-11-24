@@ -7,6 +7,7 @@ import type {
 } from 'n8n-workflow'
 import { NodeConnectionTypes } from 'n8n-workflow'
 
+import { options } from '../DiscordInteraction.node.options'
 import { getAllLoadOptions } from './methods/loadOptions'
 import { getInteractionTriggerProperties } from './properties/interactionProperties'
 import { interactionRouter } from './triggers/interactionRouter'
@@ -35,7 +36,7 @@ export class DiscordInteractionV2 implements INodeType {
           required: true,
         },
       ],
-      properties: getInteractionTriggerProperties(),
+      properties: [...getInteractionTriggerProperties(), ...options],
     }
   }
 

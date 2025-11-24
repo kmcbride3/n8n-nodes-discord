@@ -2,12 +2,12 @@ import type { INodeProperties } from 'n8n-workflow'
 
 import * as bulkDeleteMessagesOp from './bulkDeleteMessages.operation'
 import * as deleteMessageOp from './deleteMessage.operation'
-import * as sendMessageOp from './sendMessage.operation'
 import * as getMessageOp from './getMessage.operation'
 import * as getMessagesOp from './getMessages.operation'
 import * as getPinnedMessagesOp from './getPinnedMessages.operation'
 import * as getReactionsOp from './getReactions.operation'
 import * as searchMessagesOp from './searchMessages.operation'
+import * as sendMessageOp from './sendMessage.operation'
 
 // Write operations
 export const bulkDeleteMessages = { execute: bulkDeleteMessagesOp.execute, properties: bulkDeleteMessagesOp.properties }
@@ -51,10 +51,45 @@ export const description: INodeProperties[] = [
         description: 'Delete multiple messages from a channel',
         action: 'Bulk delete messages',
       },
+      {
+        name: 'Get Message',
+        value: 'getMessage',
+        description: 'Get a single message by ID',
+        action: 'Get a message',
+      },
+      {
+        name: 'Get Messages',
+        value: 'getMessages',
+        description: 'Get multiple messages from a channel',
+        action: 'Get messages',
+      },
+      {
+        name: 'Get Pinned Messages',
+        value: 'getPinnedMessages',
+        description: 'Get all pinned messages in a channel',
+        action: 'Get pinned messages',
+      },
+      {
+        name: 'Get Reactions',
+        value: 'getReactions',
+        description: 'Get users who reacted to a message',
+        action: 'Get message reactions',
+      },
+      {
+        name: 'Search Messages',
+        value: 'searchMessages',
+        description: 'Search for messages in a guild',
+        action: 'Search messages',
+      },
     ],
     default: 'send',
   },
   ...sendMessageOp.properties,
   ...deleteMessageOp.properties,
   ...bulkDeleteMessagesOp.properties,
+  ...getMessageOp.properties,
+  ...getMessagesOp.properties,
+  ...getPinnedMessagesOp.properties,
+  ...getReactionsOp.properties,
+  ...searchMessagesOp.properties,
 ]
