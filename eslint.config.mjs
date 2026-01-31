@@ -8,6 +8,7 @@ import prettierPlugin from 'eslint-plugin-prettier'
 // skipcq: JS-W1028
 import eslintConfigPrettier from 'eslint-config-prettier/flat'
 import n8nNodesBasePlugin from 'eslint-plugin-n8n-nodes-base'
+import markdownPlugin from '@eslint/markdown'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -34,7 +35,8 @@ export default [
     ],
   },
   {
-    files: ['**/*.ts'], // Specify the files to lint
+    files: ['**/*.ts'],
+    ignores: ['**/*.md/*.ts', '**/*.md/*.js'], // Exclude markdown-extracted code blocks
     languageOptions: {
       ecmaVersion: 2019,
       sourceType: 'module',
@@ -87,7 +89,7 @@ export default [
   {
     files: ['**/*.md'],
     // Use the markdown processor so code fences are extracted and linted
-    processor: 'markdown/markdown',
+    processor: markdownPlugin.processors.markdown,
     languageOptions: {
       parserOptions: {
         ecmaVersion: 2019,
@@ -158,23 +160,6 @@ export default [
     },
     rules: {
       'no-console': 'warn',
-    },
-  },
-  // Lint TypeScript code fences inside Markdown files
-  {
-    files: ['**/*.md/*.ts'],
-    languageOptions: {
-      parser: typescriptEslintParser,
-      parserOptions: {
-        project: ['./tsconfig.json'],
-      },
-    },
-    plugins: {
-      '@typescript-eslint': typescriptEslintPlugin,
-      prettier: prettierPlugin,
-    },
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
   eslintConfigPrettier,
