@@ -25,11 +25,13 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "tsc && gulp build:icons",
-    "dev": "tsc --watch",
-    "lint:fix": "eslint src/nodes src/credentials --fix",
-    "lint:format": "prettier \"src/nodes\" \"src/credentials\" \"docs\" \"**/*.md\" --write",
-    "lint": "pnpm lint:format && pnpm lint:fix",
+    "build": "n8n-node build",
+    "build:watch": "tsc --watch",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "release": "n8n-node release",
+    "prepublishOnly": "n8n-node prerelease",
     "publish": "pnpm build && pnpm publish --access public",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -63,19 +65,15 @@
     "overrides": {
       "event-pubsub": "npm:@node-ipc/event-pubsub@^6.0.2",
       "glob": "^10.4.5",
-      "@typescript-eslint/utils": "^8.45.0",
+      "@typescript-eslint/utils": "^8.54.0",
       "form-data": "^4.0.4",
+      "qs": "^6.14.1",
+      "lodash": "^4.17.23",
+      "undici": "^6.23.0",
+      "parse-url": "^10.0.3",
       "js-yaml@<3.14.2": ">=3.14.2",
       "js-yaml@>=4.0.0 <4.1.1": ">=4.1.1",
       "glob@>=10.2.0 <10.5.0": ">=10.5.0"
-    },
-    "peerDependencyRules": {
-      "allowedVersions": {
-        "eslint": "^9.37.0",
-        "event-pubsub": "npm:@node-ipc/event-pubsub@^6.0.2",
-        "glob": "^10.4.5",
-        "@typescript-eslint/utils": "^8.45.0"
-      }
     },
     "onlyBuiltDependencies": [
       "bufferutil",
@@ -85,40 +83,41 @@
     ]
   },
   "devDependencies": {
-    "@eslint/compat": "^2.0.0",
-    "@eslint/js": "^9.39.1",
+    "@eslint/compat": "^2.0.2",
+    "@n8n/node-cli": "^0.18.0",
+    "@types/node": "^25.1.0",
+    "@types/node-ipc": "^9.2.3",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.6",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "gulp": "^5.0.1",
+    "n8n-workflow": "2.6.0",
+    "prettier": "^3.8.1",
+    "release-it": "^19.2.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0",
+    "@eslint/js": "^9.39.2",
     "@eslint/markdown": "^7.5.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.10.1",
-    "@types/node-ipc": "^9.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.47.0",
-    "@typescript-eslint/parser": "^8.47.0",
-    "eslint": "^9.39.1",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-n8n-nodes-base": "^1.16.4",
-    "eslint-plugin-prettier": "^5.5.4",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
-    "gulp": "^5.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
     "jest": "^30.2.0",
-    "n8n-core": "^1.120.1",
-    "n8n-workflow": "^1.118.1",
-    "prettier": "^3.6.2",
-    "ts-jest": "^29.4.5",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.47.0"
+    "ts-jest": "^29.4.6"
   },
   "dependencies": {
-    "axios": "^1.13.2",
+    "axios": "^1.13.4",
     "discord.js": "^14.25.1",
-    "node-ipc": "^12.0.0",
+    "node-ipc": "npm:@achrinza/node-ipc@^10.1.11",
     "tweetnacl": "^1.0.3"
   },
   "optionalDependencies": {
-    "bufferutil": "^4.0.9",
-    "utf-8-validate": "^6.0.5",
+    "bufferutil": "^4.1.0",
+    "utf-8-validate": "^6.0.6",
     "zlib-sync": "^0.1.10"
   },
-  "packageManager": "pnpm@10.23.0+sha512.21c4e5698002ade97e4efe8b8b4a89a8de3c85a37919f957e7a0f30f38fbc5bbdd05980ffe29179b2fb6e6e691242e098d945d1601772cad0fef5fb6411e2a4b"
+  "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264"
 }
