@@ -17,7 +17,7 @@ importers:
     dependencies:
       axios:
         specifier: ^1.13.2
-        version: 1.13.2
+        version: 1.13.5
       discord.js:
         specifier: ^14.25.1
         version: 14.25.1
@@ -1087,8 +1087,8 @@ packages:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
 
-  axios@1.13.2:
-    resolution: {integrity: sha512-VPk9ebNqPcy5lRGuSlKx752IlDatOjT9paPlm8A7yOuW2Fbvp4X3JznJtT4f0GzGLLiWE9W8onz51SqLYwzGaA==}
+  axios@1.13.5:
+    resolution: {integrity: sha512-cz4ur7Vb0xS4/KUN0tPWe44eqxrIu31me+fbang3ijiNscE129POzipJJA6zniq2C/Z6sJCjMimjS8Lc/GAs8Q==}
 
   b4a@1.7.3:
     resolution: {integrity: sha512-5Q2mfq2WfGuFp3uS//0s6baOJLMoVduPYVeNmDYxu5OUA1/cBfvr2RIS7vi62LdNj/urk1hfmj867I3qt6uZ7Q==}
@@ -2425,8 +2425,8 @@ packages:
     resolution: {integrity: sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==}
     engines: {node: '>= 0.6.0'}
 
-  proxy-from-env@https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110:
-    resolution: {tarball: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110}
+  proxy-from-env@git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56:
+    resolution: {commit: 0be391ca8b2f9c2f52560257d67ab290df211e56, repo: git@github.com:orgads/proxy-from-env.git, type: git}
     version: 1.1.0
 
   punycode@2.3.1:
@@ -3563,7 +3563,7 @@ snapshots:
 
   '@n8n/client-oauth2@0.31.0':
     dependencies:
-      axios: 1.13.2
+      axios: 1.13.5
     transitivePeerDependencies:
       - debug
 
@@ -4583,11 +4583,11 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios@1.13.2:
+  axios@1.13.5:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.5
-      proxy-from-env: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110
+      proxy-from-env: git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56
     transitivePeerDependencies:
       - debug
 
@@ -5822,7 +5822,7 @@ snapshots:
       '@n8n/di': 0.9.0
       '@sentry/node': 9.47.1
       '@sentry/node-native': 9.47.1
-      axios: 1.13.2
+      axios: 1.13.5
       callsites: 3.1.0
       chardet: 2.0.0
       cron: 3.1.7
@@ -5843,7 +5843,7 @@ snapshots:
       p-cancelable: 2.1.1
       picocolors: 1.0.1
       pretty-bytes: 5.6.0
-      proxy-from-env: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110
+      proxy-from-env: git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56
       qs: 6.11.0
       ssh2: 1.15.0
       uuid: 10.0.0
@@ -6087,7 +6087,7 @@ snapshots:
 
   process@0.11.10: {}
 
-  proxy-from-env@https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110: {}
+  proxy-from-env@git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56: {}
 
   punycode@2.3.1: {}
 
