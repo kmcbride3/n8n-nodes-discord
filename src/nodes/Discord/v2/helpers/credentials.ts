@@ -1,6 +1,9 @@
-import { Client, GatewayIntentBits, REST, WebhookClient } from 'discord.js'
+import { GatewayIntentBits, REST, WebhookClient } from 'discord.js'
+import type { Client } from 'discord.js'
 import type { IExecuteFunctions } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
+
+import { getDiscordClient as getPooledDiscordClient } from '../../shared/client/discord-client-manager'
 
 export interface IDiscordCredentials {
   type: 'botToken' | 'oAuth2' | 'webhook' | 'custom'

@@ -116,6 +116,12 @@ const clientRefCount = new Map<string, number>()
 const clientsWithErrorHandling = new WeakSet<Client>()
 
 /**
+ * Track in-flight login attempts to prevent concurrent logins with the same token
+ * Maps cache key to Promise that resolves when login completes
+ */
+const loginPromises = new Map<string, Promise<Client>>()
+
+/**
  * Maximum idle time before a client is considered for cleanup (30 minutes)
  */
 const CLIENT_MAX_IDLE_TIME = 30 * 60 * 1000
@@ -236,6 +242,7 @@ function startIdleCleanupTimer(): void {
 
 /**
  * Get or create a Discord.js client for triggers
+ * Uses login promise tracking to prevent concurrent login attempts with the same token (RACE CONDITION FIX)
  */
 export async function getDiscordClient(
   this: ITriggerFunctions,
@@ -265,43 +272,71 @@ export async function getDiscordClient(
       clientCache.delete(cacheKey)
       clientLastUsed.delete(cacheKey)
       clientRefCount.delete(cacheKey)
+      loginPromises.delete(cacheKey)
     }
   }
 
-  // Create new client with all intents
-  const client = new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMessages,
-      GatewayIntentBits.MessageContent,
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.GuildPresences,
-    ],
-  })
-
-  // Validate intents BEFORE login for fail-fast behavior (IMPROVEMENT #4)
-  if (triggerType && client.options.intents) {
-    const intents = new IntentsBitField(client.options.intents)
-    validateTriggerIntents.call(this, triggerType, intents)
+  // Check if a login is already in progress for this token
+  // If so, wait for it instead of creating a duplicate client (RACE CONDITION FIX)
+  if (loginPromises.has(cacheKey)) {
+    LoggerProxy.info(`Login in progress for token, waiting for completion`)
+    const existingClient = await loginPromises.get(cacheKey)!
+    
+    // Increment reference count for reused client
+    const currentRefCount = clientRefCount.get(cacheKey) || 0
+    clientRefCount.set(cacheKey, currentRefCount + 1)
+    
+    LoggerProxy.info(`Reusing newly connected client (ref count: ${currentRefCount + 1})`)
+    return existingClient
   }
+
+  // Create a promise for this login attempt and track it
+  const loginPromise = (async () => {
+    try {
+      // Create new client with all intents
+      const client = new Client({
+        intents: [
+          GatewayIntentBits.Guilds,
+          GatewayIntentBits.GuildMessages,
+          GatewayIntentBits.MessageContent,
+          GatewayIntentBits.GuildMembers,
+          GatewayIntentBits.GuildPresences,
+        ],
+      })
+
+      // Validate intents BEFORE login for fail-fast behavior (IMPROVEMENT #4)
+      if (triggerType && client.options.intents) {
+        const intents = new IntentsBitField(client.options.intents)
+        validateTriggerIntents.call(this, triggerType, intents)
+      }
+
+      await client.login(credentials.botToken)
+
+      // Wait for Discord.js client to be ready before proceeding
+      if (!client.isReady()) {
+        await new Promise<void>((resolve) => {
+          client.once('ready', () => resolve())
+        })
+      }
+
+      clientCache.set(cacheKey, client)
+      clientLastUsed.set(cacheKey, Date.now())
+
+      // Initialize reference count for new client
+      clientRefCount.set(cacheKey, 1)
+
+      LoggerProxy.info('Discord client connected for triggers')
+      return client
+    } finally {
+      // Clean up the login promise after completion
+      loginPromises.delete(cacheKey)
+    }
+  })()
+
+  loginPromises.set(cacheKey, loginPromise)
 
   try {
-    await client.login(credentials.botToken)
-
-    // Wait for Discord.js client to be ready before proceeding
-    if (!client.isReady()) {
-      await new Promise<void>((resolve) => {
-        client.once('ready', () => resolve())
-      })
-    }
-
-    clientCache.set(cacheKey, client)
-    clientLastUsed.set(cacheKey, Date.now())
-
-    // Initialize reference count for new client
-    clientRefCount.set(cacheKey, 1)
-
-    LoggerProxy.info('Discord client connected for triggers')
+    const client = await loginPromise
     return client
   } catch (error) {
     throw new NodeOperationError(
@@ -359,6 +394,7 @@ export function createTriggerResponse(client: Client, cleanupFn?: () => void, ca
           clientCache.delete(hashedKey)
           clientLastUsed.delete(hashedKey)
           clientRefCount.delete(hashedKey)
+          loginPromises.delete(hashedKey)
           LoggerProxy.info('Discord client destroyed (no more active triggers)')
         }
       } else {
