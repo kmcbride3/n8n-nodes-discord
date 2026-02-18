@@ -40,14 +40,21 @@ export function handleNonFatalError(
   LoggerProxy[level](`Discord V1 Bot - ${operation}`, { error: errorMessage })
 }
 
-export const connection = (credentials: ICredentials): Promise<string> => {
+/**
+ * Attempt to connect with exponential backoff retry logic
+ * Retries up to 5 times with exponential backoff when encountering 'login' status
+ */
+export const connection = (credentials: ICredentials, attempt = 0): Promise<string> => {
+  const maxAttempts = 5
+  const baseDelay = 500 // milliseconds
+
   return new Promise((resolve, reject) => {
     if (!credentials || !credentials.token || !credentials.clientId) {
       reject(new Error('credentials missing'))
       return
     }
 
-    const timeout = setTimeout(() => reject(new Error('timeout')), 15000)
+    const timeout = setTimeout(() => reject(new Error('timeout')), 30000)
 
     ipc.config.retry = 1500
     ipc.connectTo('bot', () => {
@@ -55,11 +62,28 @@ export const connection = (credentials: ICredentials): Promise<string> => {
 
       ipc.of.bot.on('credentials', (data: string) => {
         clearTimeout(timeout)
-        if (data === 'error') reject(new Error('Invalid credentials'))
-        else if (data === 'missing') reject(new Error('Token or clientId missing'))
-        else if (data === 'login') reject(new Error('Already logging in'))
-        else if (data === 'different') resolve('Already logging in with different credentials')
-        else resolve(data) // ready / already
+        if (data === 'error') {
+          reject(new Error('Invalid credentials'))
+        } else if (data === 'missing') {
+          reject(new Error('Token or clientId missing'))
+        } else if (data === 'login') {
+          // Server is still processing a login - retry with exponential backoff
+          if (attempt < maxAttempts) {
+            const delay = baseDelay * Math.pow(2, attempt) // exponential backoff: 500ms, 1s, 2s, 4s, 8s
+            LoggerProxy.debug(`Discord V1 - Connection in progress, retrying after ${delay}ms (attempt ${attempt + 1}/${maxAttempts})`)
+            setTimeout(() => {
+              connection(credentials, attempt + 1)
+                .then(resolve)
+                .catch(reject)
+            }, delay)
+          } else {
+            reject(new Error('Max connection retry attempts exceeded'))
+          }
+        } else if (data === 'different') {
+          resolve('Already logging in with different credentials')
+        } else {
+          resolve(data) // ready / already
+        }
       })
     })
   })
