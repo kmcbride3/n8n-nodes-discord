@@ -1,5 +1,4 @@
-import { GatewayIntentBits, REST, WebhookClient } from 'discord.js'
-import type { Client } from 'discord.js'
+import { Client, GatewayIntentBits, REST, WebhookClient } from 'discord.js'
 import type { IExecuteFunctions } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
@@ -67,6 +66,7 @@ export async function getDiscordCredentials(this: IExecuteFunctions): Promise<ID
 
 /**
  * Create a Discord client based on credentials
+ * Uses the shared client pool to prevent duplicate logins and improve resource efficiency
  */
 export async function createDiscordClient(
   this: IExecuteFunctions,
@@ -86,17 +86,25 @@ export async function createDiscordClient(
     throw new NodeOperationError(this.getNode(), 'Bot token is required for Discord client operations')
   }
 
-  const client = new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMessages,
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.DirectMessages,
-    ],
-  })
-
-  await client.login(token)
-  return client
+  // Use the shared client pool to prevent concurrent login attempts with the same token
+  // This ensures efficient resource utilization and prevents race conditions
+  try {
+    const client = await getPooledDiscordClient({
+      token,
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.DirectMessages,
+      ],
+    })
+    return client
+  } catch (error) {
+    throw new NodeOperationError(
+      this.getNode(),
+      `Failed to create Discord client: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
 }
 
 /**
