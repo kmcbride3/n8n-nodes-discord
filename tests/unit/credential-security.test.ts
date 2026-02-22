@@ -18,6 +18,7 @@ import {
   createDiscordClient,
   type IDiscordCredentials,
 } from '../../src/nodes/Discord/v2/helpers/credentials'
+import { getDiscordClient } from '../../src/nodes/Discord/shared/client/discord-client-manager'
 
 // Mock n8n IExecuteFunctions with credential handling
 const createMockExecuteFunctions = (credentialOverrides: Record<string, any> = {}): IExecuteFunctions => {
@@ -70,6 +71,7 @@ jest.mock('discord.js', () => ({
     login: jest.fn().mockResolvedValue(undefined),
     isReady: jest.fn().mockReturnValue(true),
     destroy: jest.fn().mockResolvedValue(undefined),
+    on: jest.fn(),
   })),
   WebhookClient: jest.fn().mockImplementation(() => ({
     send: jest.fn().mockResolvedValue({ id: 'test-message-id' }),
@@ -79,7 +81,45 @@ jest.mock('discord.js', () => ({
     GuildMessages: 2,
     GuildMembers: 4,
     DirectMessages: 8,
+    Flags: {
+      Guilds: 1,
+      GuildMessages: 2,
+      MessageContent: 4,
+      GuildMembers: 8,
+      GuildPresences: 16,
+      GuildMessageReactions: 32,
+    },
   },
+  Partials: {
+    Message: 0,
+    Channel: 1,
+    Reaction: 2,
+  },
+  IntentsBitField: {
+    Flags: {
+      Guilds: 1,
+      GuildMessages: 2,
+      MessageContent: 4,
+      GuildMembers: 8,
+      GuildPresences: 16,
+      GuildMessageReactions: 32,
+    },
+  },
+  REST: jest.fn().mockImplementation(() => ({})),
+}))
+
+// Mock the discord-client-manager to prevent actual Discord connections
+jest.mock('../../src/nodes/Discord/shared/client/discord-client-manager', () => ({
+  getDiscordClient: jest.fn().mockImplementation(async (options) => {
+    const mockClient = {
+      login: jest.fn().mockResolvedValue(undefined),
+      isReady: jest.fn().mockReturnValue(true),
+      destroy: jest.fn().mockResolvedValue(undefined),
+      on: jest.fn(),
+    }
+    await mockClient.login(options.token)
+    return mockClient
+  }),
 }))
 
 describe('Discord Credential Security - Priority 2 Enhanced Testing', () => {
@@ -268,7 +308,8 @@ describe('Discord Credential Security - Priority 2 Enhanced Testing', () => {
 
       const client = await createDiscordClient.call(mockExecFunctions)
 
-      expect(Client).toHaveBeenCalledWith({
+      expect(getDiscordClient).toHaveBeenCalledWith({
+        token: 'bot_test_token_123456789',
         intents: [1, 2, 4, 8], // Guilds, GuildMessages, GuildMembers, DirectMessages
       })
       expect(client).toBeDefined()
