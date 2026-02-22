@@ -281,11 +281,11 @@ export async function getDiscordClient(
   if (loginPromises.has(cacheKey)) {
     LoggerProxy.info(`Login in progress for token, waiting for completion`)
     const existingClient = await loginPromises.get(cacheKey)!
-    
+
     // Increment reference count for reused client
     const currentRefCount = clientRefCount.get(cacheKey) || 0
     clientRefCount.set(cacheKey, currentRefCount + 1)
-    
+
     LoggerProxy.info(`Reusing newly connected client (ref count: ${currentRefCount + 1})`)
     return existingClient
   }

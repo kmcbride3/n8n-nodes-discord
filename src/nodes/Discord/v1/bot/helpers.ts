@@ -70,7 +70,9 @@ export const connection = (credentials: ICredentials, attempt = 0): Promise<stri
           // Server is still processing a login - retry with exponential backoff
           if (attempt < maxAttempts) {
             const delay = baseDelay * Math.pow(2, attempt) // exponential backoff: 500ms, 1s, 2s, 4s, 8s
-            LoggerProxy.debug(`Discord V1 - Connection in progress, retrying after ${delay}ms (attempt ${attempt + 1}/${maxAttempts})`)
+            LoggerProxy.debug(
+              `Discord V1 - Connection in progress, retrying after ${delay}ms (attempt ${attempt + 1}/${maxAttempts})`,
+            )
             setTimeout(() => {
               connection(credentials, attempt + 1)
                 .then(resolve)
