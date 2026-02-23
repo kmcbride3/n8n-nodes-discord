@@ -14,7 +14,7 @@ import { LoggerProxy } from 'n8n-workflow'
 import {
   createWebSocketEnhancement,
   WebSocketEnhancementManager,
-} from '../../src/nodes/Discord/v2/helpers/websocket/websocket-enhancement'
+} from '../../../src/nodes/Discord/v2/helpers/websocket/websocket-enhancement'
 
 // Mock LoggerProxy to avoid actual logging during tests
 jest.mock('n8n-workflow', () => ({

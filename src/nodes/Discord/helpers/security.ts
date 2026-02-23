@@ -43,6 +43,11 @@ export class SecurityValidationError extends Error {
  * Uses Discord.js verifyString for basic validation
  */
 export function validateRegexPattern(pattern: string, context = 'regex'): void {
+  // Check for empty string first
+  if (!pattern || pattern.length === 0) {
+    throw new SecurityValidationError(`Invalid ${context}: Pattern must be a non-empty string`)
+  }
+
   try {
     verifyString(pattern, Error, `Invalid ${context}: Pattern must be a non-empty string`, false)
   } catch {
@@ -119,6 +124,11 @@ export function safeRegexTest(pattern: string, input: string, flags = 'i'): bool
  * Leverages Discord.js built-in snowflake validation
  */
 export function validateSnowflakeId(id: string, context = 'ID'): void {
+  // Check for empty string first
+  if (!id || id.length === 0) {
+    throw new SecurityValidationError(`Invalid ${context}: Must be a non-empty string`)
+  }
+
   try {
     verifyString(id, undefined, undefined, false)
   } catch {
@@ -277,7 +287,7 @@ export function validateCommandName(name: string): void {
   }
 
   // Discord command names must be lowercase, no spaces, specific characters only
-  if (!/^[\w-]{1,32}$/u.test(name)) {
+  if (!/^[a-z0-9_-]{1,32}$/u.test(name)) {
     throw new SecurityValidationError(
       'Invalid command name: Must be 1-32 characters, lowercase letters, numbers, hyphens, and underscores only',
     )

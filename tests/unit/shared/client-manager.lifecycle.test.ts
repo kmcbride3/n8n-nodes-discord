@@ -1,6 +1,6 @@
 import DiscordClientManager, {
   DiscordClientOptions,
-} from '../../src/nodes/Discord/shared/client/discord-client-manager'
+} from '../../../src/nodes/Discord/shared/client/discord-client-manager'
 
 // Basic lifecycle test for the DiscordClientManager
 describe('DiscordClientManager lifecycle', () => {

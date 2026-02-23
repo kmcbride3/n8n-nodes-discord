@@ -10,7 +10,7 @@ import type { IExecuteFunctions } from 'n8n-workflow'
 import type { Client } from 'discord.js'
 
 // Import the functions we want to test
-import * as discordOps from '../../src/nodes/Discord/v2/helpers/discord-operations'
+import * as discordOps from '../../../src/nodes/Discord/v2/helpers/discord-operations'
 
 const mockExecuteFunctions = {
   getNode: jest.fn(() => ({

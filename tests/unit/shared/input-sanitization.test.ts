@@ -15,8 +15,8 @@ import { NodeOperationError } from 'n8n-workflow'
 import {
   validateDiscordSnowflake,
   validateAuditLogReason,
-} from '../../src/nodes/Discord/shared/validation/discord-validation'
-import { isValidSnowflake } from '../../src/nodes/Discord/v2/helpers/utils'
+} from '../../../src/nodes/Discord/shared/validation/discord-validation'
+import { isValidSnowflake } from '../../../src/nodes/Discord/v2/helpers/utils'
 
 // Mock IExecuteFunctions
 const mockExecuteFunctions = {

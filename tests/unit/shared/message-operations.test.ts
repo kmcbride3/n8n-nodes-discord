@@ -23,7 +23,7 @@ import {
   createDiscordAttachments,
   buildDiscordMessage,
   type IDiscordMessageConfig,
-} from '../../src/nodes/Discord/shared/operations/message-operations'
+} from '../../../src/nodes/Discord/shared/operations/message-operations'
 import type { APIEmbed } from 'discord.js'
 
 // Test types matching Discord.js official API types
@@ -50,7 +50,7 @@ type TestSelectConfig = {
     default?: boolean
   }>
 }
-import type { IDiscordFile } from '../../src/nodes/Discord/v2/helpers/types'
+import type { IDiscordFile } from '../../../src/nodes/Discord/v2/helpers/types'
 
 // Mock Discord.js components
 jest.mock('discord.js', () => ({
@@ -101,7 +101,7 @@ jest.mock('discord.js', () => ({
 }))
 
 // Mock helper functions
-jest.mock('../../src/nodes/Discord/helpers', () => ({
+jest.mock('../../../src/nodes/Discord/helpers', () => ({
   validateColorHex: jest.fn((color: string) => {
     if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
       throw new NodeOperationError(

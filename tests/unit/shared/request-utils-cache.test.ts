@@ -1,5 +1,5 @@
 describe('request-utils parse cache', () => {
-  const modPath = '../../src/nodes/Discord/shared/utils/request-normalization'
+  const modPath = '../../../src/nodes/Discord/shared/utils/request-normalization'
 
   it('caches parsed canonical body and avoids repeated JSON.parse', async () => {
     // Load a fresh instance of the module to ensure clean cache

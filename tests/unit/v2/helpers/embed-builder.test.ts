@@ -1,8 +1,8 @@
 import type { IExecuteFunctions } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
-import { buildEnhancedEmbed, EMBED_LIMITS } from '../../src/nodes/Discord/v2/helpers/embedBuilder'
-import { createMockExecuteFunctions } from '../helpers/executeFunctionsMock'
+import { buildEnhancedEmbed, EMBED_LIMITS } from '../../../../src/nodes/Discord/v2/helpers/embedBuilder'
+import { createMockExecuteFunctions } from '../../../helpers/executeFunctionsMock'
 
 // Helper to create mock context with parameter map
 function createMockContextWithParams(params: Record<string, unknown>): IExecuteFunctions {

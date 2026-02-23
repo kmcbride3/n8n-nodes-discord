@@ -13,8 +13,8 @@
 import type { ITriggerFunctions } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
-import { interactionRouter } from '../../src/nodes/Discord/v2/triggers/interactionRouter';
-import { INTERACTION_TRIGGER_REGISTRY } from '../../src/nodes/Discord/v2/triggers/interactionTriggerRegistry';
+import { interactionRouter } from '../../../../src/nodes/Discord/v2/triggers/interactionRouter';
+import { INTERACTION_TRIGGER_REGISTRY } from '../../../../src/nodes/Discord/v2/triggers/interactionTriggerRegistry';
 
 // Mock Discord.js
 jest.mock('discord.js', () => {
@@ -44,7 +44,7 @@ jest.mock('discord.js', () => {
 });
 
 // Mock the helper functions
-jest.mock('../../src/nodes/Discord/v2/triggerHelpers', () => ({
+jest.mock('../../../../src/nodes/Discord/v2/triggerHelpers', () => ({
 	getDiscordClient: jest.fn().mockResolvedValue({
 		on: jest.fn(),
 		off: jest.fn(),
@@ -563,7 +563,7 @@ describe('Discord Interaction Trigger', () => {
 				isReady: jest.fn().mockReturnValue(true),
 			};
 
-			const { getDiscordClient } = require('../../src/nodes/Discord/v2/triggerHelpers');
+			const { getDiscordClient } = require('../../../../src/nodes/Discord/v2/triggerHelpers');
 			(getDiscordClient as jest.Mock).mockResolvedValue(mockClient);
 
 			const result = await interactionRouter.call(mockContext);
@@ -580,7 +580,7 @@ describe('Discord Interaction Trigger', () => {
 				isReady: jest.fn().mockReturnValue(true),
 			};
 
-			const { getDiscordClient } = require('../../src/nodes/Discord/v2/triggerHelpers');
+			const { getDiscordClient } = require('../../../../src/nodes/Discord/v2/triggerHelpers');
 			(getDiscordClient as jest.Mock).mockResolvedValue(mockClient);
 
 			const result = await interactionRouter.call(mockContext);

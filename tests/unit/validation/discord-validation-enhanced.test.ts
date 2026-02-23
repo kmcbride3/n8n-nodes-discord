@@ -25,7 +25,7 @@ import {
   validateDeleteMessageDays,
   validateAuditLogReason,
   validateEmbedField,
-} from '../../src/nodes/Discord/shared/validation/discord-validation'
+} from '../../../src/nodes/Discord/shared/validation/discord-validation'
 
 // Mock IExecuteFunctions
 const mockExecuteFunctions = {

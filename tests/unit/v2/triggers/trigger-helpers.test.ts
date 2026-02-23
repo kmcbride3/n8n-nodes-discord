@@ -21,7 +21,7 @@ import {
   TRIGGER_INTENT_REQUIREMENTS,
   type TriggerType,
   type IDiscordCredentials,
-} from '../../src/nodes/Discord/v2/triggerHelpers'
+} from '../../../../src/nodes/Discord/v2/triggerHelpers'
 
 // Mock Discord.js Client
 jest.mock('discord.js', () => {

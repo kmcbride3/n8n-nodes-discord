@@ -9,8 +9,8 @@
 
 import { IntentsBitField, SnowflakeUtil } from 'discord.js'
 import { NodeOperationError } from 'n8n-workflow'
-import { DiscordValidation } from '../../src/nodes/Discord/shared/validation/simple-validation'
-import { DiscordLimits } from '../../src/nodes/Discord/shared/constants/discord-constants'
+import { DiscordValidation } from '../../../src/nodes/Discord/shared/validation/simple-validation'
+import { DiscordLimits } from '../../../src/nodes/Discord/shared/constants/discord-constants'
 
 // Mock n8n node structure
 const mockNode = {

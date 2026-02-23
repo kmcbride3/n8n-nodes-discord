@@ -37,9 +37,9 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:comprehensive": "node tests/run-comprehensive-tests.js",
-    "test:unit": "node tests/run-comprehensive-tests.js unit",
-    "test:integration": "node tests/run-comprehensive-tests.js integration",
-    "test:security": "node tests/run-comprehensive-tests.js security"
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:security": "jest tests/unit/credentials tests/unit/validation"
   },
   "files": [
     "dist"

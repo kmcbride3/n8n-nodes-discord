@@ -8,7 +8,7 @@
  */
 
 import { GatewayIntentBits } from 'discord.js'
-import { V2OperationType } from '../../src/nodes/Discord/v2/helpers/connection/connection-optimization'
+import { V2OperationType } from '../../../src/nodes/Discord/v2/helpers/connection/connection-optimization'
 
 describe('Connection Optimization Features', () => {
   describe('V2 Operation Types', () => {

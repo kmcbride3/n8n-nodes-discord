@@ -11,7 +11,7 @@ const TEST_SUITES = [
     name: 'discord-validation-jest',
     description: 'Phase 2.4.3 - Discord validation utilities (Jest-based)',
     category: 'unit',
-    path: 'tests/unit/discord-validation-jest.test.ts',
+    path: 'tests/unit/validation/discord-validation-jest.test.ts',
     status: 'working'
   },
   // Note: The following tests are using custom framework format and need conversion to Jest
@@ -19,42 +19,42 @@ const TEST_SUITES = [
     name: 'discord-validation',
     description: 'Phase 2.4.3 - Discord validation utilities (custom framework)',
     category: 'unit',
-    path: 'tests/unit/discord-validation.test.ts',
+    path: 'tests/unit/validation/discord-validation.test.ts',
     status: 'needs-conversion'
   },
   {
     name: 'connection-optimization', 
     description: 'Phase 3.1 - Connection optimization and client pooling',
     category: 'unit',
-    path: 'tests/unit/connection-optimization.test.ts',
+    path: 'tests/unit/shared/connection-optimization.test.ts',
     status: 'needs-conversion'
   },
   {
     name: 'v2-operations',
     description: 'V2 operation workflows and Discord.js integration',
     category: 'integration',
-    path: 'tests/integration/v2-operations.test.ts',
+    path: 'tests/integration/v2/v2-operations.test.ts',
     status: 'needs-conversion'
   },
   {
     name: 'collector-lifecycle',
     description: 'Discord.js collector lifecycle and memory management', 
     category: 'integration',
-    path: 'tests/integration/collector-lifecycle.test.ts',
+    path: 'tests/integration/lifecycle/collector-lifecycle.test.ts',
     status: 'needs-conversion'
   },
   {
     name: 'network-recovery',
     description: 'Network resilience and rate limiting scenarios',
     category: 'integration', 
-    path: 'tests/integration/network-recovery.test.ts',
+    path: 'tests/integration/lifecycle/network-recovery.test.ts',
     status: 'needs-conversion'
   },
   {
     name: 'credential-handling',
     description: 'n8n credential integration and security',
     category: 'security',
-    path: 'tests/integration/credential-handling.test.ts',
+    path: 'tests/integration/lifecycle/credential-handling.test.ts',
     status: 'needs-conversion'
   },
 ]

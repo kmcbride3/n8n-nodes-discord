@@ -156,7 +156,7 @@ describe('V2 Message Operation Workflows', () => {
       const fs = require('fs')
       const path = require('path')
 
-      const workflowPath = path.join(__dirname, 'workflows', 'send-message.workflow.json')
+      const workflowPath = path.join(__dirname, '..', 'workflows', 'send-message.workflow.json')
 
       // Check if workflow file exists
       expect(fs.existsSync(workflowPath)).toBe(true)
@@ -282,7 +282,7 @@ describe('V2 Member Operation Workflows', () => {
       const fs = require('fs')
       const path = require('path')
 
-      const workflowPath = path.join(__dirname, 'workflows', 'ban-member.workflow.json')
+      const workflowPath = path.join(__dirname, '..', 'workflows', 'ban-member.workflow.json')
 
       expect(fs.existsSync(workflowPath)).toBe(true)
 

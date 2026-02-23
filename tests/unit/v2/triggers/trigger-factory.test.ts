@@ -11,8 +11,8 @@
 import type { ITriggerFunctions } from 'n8n-workflow'
 import { NodeOperationError, LoggerProxy } from 'n8n-workflow'
 
-import { createDiscordTrigger } from '../../src/nodes/Discord/v2/triggers/triggerFactory'
-import { TRIGGER_REGISTRY } from '../../src/nodes/Discord/v2/triggers/triggerRegistry'
+import { createDiscordTrigger } from '../../../../src/nodes/Discord/v2/triggers/triggerFactory'
+import { TRIGGER_REGISTRY } from '../../../../src/nodes/Discord/v2/triggers/triggerRegistry'
 
 // Mock Discord.js
 jest.mock('discord.js', () => {

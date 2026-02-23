@@ -17,11 +17,11 @@ jest.mock('n8n-workflow', () => ({
 	updateDisplayOptions: jest.fn((options) => options.properties || []),
 }));
 
-import * as replyOperation from '../../src/nodes/Discord/v2/actions/interaction/reply.operation';
-import * as deferReplyOperation from '../../src/nodes/Discord/v2/actions/interaction/deferReply.operation';
-import * as editReplyOperation from '../../src/nodes/Discord/v2/actions/interaction/editReply.operation';
-import * as followUpOperation from '../../src/nodes/Discord/v2/actions/interaction/followUp.operation';
-import { createMockExecuteFunctions } from '../helpers/executeFunctionsMock';
+import * as replyOperation from '../../../../src/nodes/Discord/v2/actions/interaction/reply.operation';
+import * as deferReplyOperation from '../../../../src/nodes/Discord/v2/actions/interaction/deferReply.operation';
+import * as editReplyOperation from '../../../../src/nodes/Discord/v2/actions/interaction/editReply.operation';
+import * as followUpOperation from '../../../../src/nodes/Discord/v2/actions/interaction/followUp.operation';
+import { createMockExecuteFunctions } from '../../../helpers/executeFunctionsMock';
 
 describe('Discord Interaction Operations', () => {
 	let mockContext: IExecuteFunctions;

@@ -17,8 +17,8 @@ import {
   getDiscordCredentials,
   createDiscordClient,
   type IDiscordCredentials,
-} from '../../src/nodes/Discord/v2/helpers/credentials'
-import { getDiscordClient } from '../../src/nodes/Discord/shared/client/discord-client-manager'
+} from '../../../src/nodes/Discord/v2/helpers/credentials'
+import { getDiscordClient } from '../../../src/nodes/Discord/shared/client/discord-client-manager'
 
 // Mock n8n IExecuteFunctions with credential handling
 const createMockExecuteFunctions = (credentialOverrides: Record<string, any> = {}): IExecuteFunctions => {
@@ -109,7 +109,7 @@ jest.mock('discord.js', () => ({
 }))
 
 // Mock the discord-client-manager to prevent actual Discord connections
-jest.mock('../../src/nodes/Discord/shared/client/discord-client-manager', () => ({
+jest.mock('../../../src/nodes/Discord/shared/client/discord-client-manager', () => ({
   getDiscordClient: jest.fn().mockImplementation(async (options) => {
     const mockClient = {
       login: jest.fn().mockResolvedValue(undefined),
