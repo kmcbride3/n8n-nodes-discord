@@ -1616,8 +1616,8 @@ packages:
     resolution: {integrity: sha512-f7ccFPK3SXFHpx15UIGyRJ/FJQctuKZ0zVuN3frBo4HnK3cay9VEW0R6yPYFHC0AgqhukPzKjq22t5DmAyqGyw==}
     engines: {node: '>=16'}
 
-  flatted@3.3.3:
-    resolution: {integrity: sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==}
+  flatted@3.4.2:
+    resolution: {integrity: sha512-PjDse7RzhcPkIJwy5t7KPWQSZ9cAbzQXcafsetQoD7sOJRQlGikNbx7yZp2OotDnJyrDcbyRq3Ttb18iYOqkxA==}
 
   fn.name@1.1.0:
     resolution: {integrity: sha512-GRnmB5gPyJpAhTQdSZTSp9uaPSvl09KoYcMQtsB9rQoOmzs9dH6ffeccH+Z+cv6P68Hu5bC6JjRh4Ah/mHSNRw==}
@@ -2425,8 +2425,8 @@ packages:
     resolution: {integrity: sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==}
     engines: {node: '>= 0.6.0'}
 
-  proxy-from-env@https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110:
-    resolution: {tarball: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110}
+  proxy-from-env@git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56:
+    resolution: {commit: 0be391ca8b2f9c2f52560257d67ab290df211e56, repo: git@github.com:orgads/proxy-from-env.git, type: git}
     version: 1.1.0
 
   punycode@2.3.1:
@@ -2810,6 +2810,7 @@ packages:
 
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   v8flags@4.0.1:
@@ -4587,7 +4588,7 @@ snapshots:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.5
-      proxy-from-env: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110
+      proxy-from-env: git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56
     transitivePeerDependencies:
       - debug
 
@@ -5219,10 +5220,10 @@ snapshots:
 
   flat-cache@4.0.1:
     dependencies:
-      flatted: 3.3.3
+      flatted: 3.4.2
       keyv: 4.5.4
 
-  flatted@3.3.3: {}
+  flatted@3.4.2: {}
 
   fn.name@1.1.0: {}
 
@@ -5843,7 +5844,7 @@ snapshots:
       p-cancelable: 2.1.1
       picocolors: 1.0.1
       pretty-bytes: 5.6.0
-      proxy-from-env: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110
+      proxy-from-env: git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56
       qs: 6.11.0
       ssh2: 1.15.0
       uuid: 10.0.0
@@ -6087,7 +6088,7 @@ snapshots:
 
   process@0.11.10: {}
 
-  proxy-from-env@https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110: {}
+  proxy-from-env@git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56: {}
 
   punycode@2.3.1: {}
 
