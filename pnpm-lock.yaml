@@ -2054,8 +2054,8 @@ packages:
   kuler@2.0.0:
     resolution: {integrity: sha512-Xq9nH7KlWZmXAtodXDDRE7vs6DU1gTU8zYDHDiWLSip45Egwq3plLHzPn27NgvzL2r1LMPC1vdqh98sQxtqj4A==}
 
-  langsmith@0.3.81:
-    resolution: {integrity: sha512-NFmp7TDrrbCE6TIfHqutN9xhdgvx0EOhULVo8bDW+ib5idprwjMTvmS0S1n9uVFwjN03zU2zVEWViXnwy5XPrw==}
+  langsmith@0.3.87:
+    resolution: {integrity: sha512-XXR1+9INH8YX96FKWc5tie0QixWz6tOqAsAKfcJyPkE0xPep+NDz0IQLR32q4bn10QK3LqD2HN6T3n6z1YLW7Q==}
     peerDependencies:
       '@opentelemetry/api': '*'
       '@opentelemetry/exporter-trace-otlp-proto': '*'
@@ -2425,8 +2425,8 @@ packages:
     resolution: {integrity: sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==}
     engines: {node: '>= 0.6.0'}
 
-  proxy-from-env@https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110:
-    resolution: {tarball: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110}
+  proxy-from-env@git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56:
+    resolution: {commit: 0be391ca8b2f9c2f52560257d67ab290df211e56, repo: git@github.com:orgads/proxy-from-env.git, type: git}
     version: 1.1.0
 
   punycode@2.3.1:
@@ -2810,6 +2810,7 @@ packages:
 
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   v8flags@4.0.1:
@@ -3535,7 +3536,7 @@ snapshots:
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
-      langsmith: 0.3.81(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.0))(openai@5.20.3(ws@8.18.3)(zod@3.25.67))
+      langsmith: 0.3.87(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.0))(openai@5.20.3(ws@8.18.3)(zod@3.25.67))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -4587,7 +4588,7 @@ snapshots:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.5
-      proxy-from-env: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110
+      proxy-from-env: git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56
     transitivePeerDependencies:
       - debug
 
@@ -5689,13 +5690,12 @@ snapshots:
 
   kuler@2.0.0: {}
 
-  langsmith@0.3.81(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.0))(openai@5.20.3(ws@8.18.3)(zod@3.25.67)):
+  langsmith@0.3.87(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.0))(openai@5.20.3(ws@8.18.3)(zod@3.25.67)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
       console-table-printer: 2.15.0
       p-queue: 6.6.2
-      p-retry: 4.6.2
       semver: 7.7.3
       uuid: 10.0.0
     optionalDependencies:
@@ -5843,7 +5843,7 @@ snapshots:
       p-cancelable: 2.1.1
       picocolors: 1.0.1
       pretty-bytes: 5.6.0
-      proxy-from-env: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110
+      proxy-from-env: git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56
       qs: 6.11.0
       ssh2: 1.15.0
       uuid: 10.0.0
@@ -6087,7 +6087,7 @@ snapshots:
 
   process@0.11.10: {}
 
-  proxy-from-env@https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110: {}
+  proxy-from-env@git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56: {}
 
   punycode@2.3.1: {}
 
