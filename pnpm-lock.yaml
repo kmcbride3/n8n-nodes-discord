@@ -17,7 +17,7 @@ importers:
     dependencies:
       axios:
         specifier: ^1.13.2
-        version: 1.13.2
+        version: 1.16.0
       discord.js:
         specifier: ^14.25.1
         version: 14.25.1
@@ -1087,8 +1087,8 @@ packages:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
 
-  axios@1.13.2:
-    resolution: {integrity: sha512-VPk9ebNqPcy5lRGuSlKx752IlDatOjT9paPlm8A7yOuW2Fbvp4X3JznJtT4f0GzGLLiWE9W8onz51SqLYwzGaA==}
+  axios@1.16.0:
+    resolution: {integrity: sha512-6hp5CwvTPlN2A31g5dxnwAX0orzM7pmCRDLnZSX772mv8WDqICwFjowHuPs04Mc8deIld1+ejhtaMn5vp6b+1w==}
 
   b4a@1.7.3:
     resolution: {integrity: sha512-5Q2mfq2WfGuFp3uS//0s6baOJLMoVduPYVeNmDYxu5OUA1/cBfvr2RIS7vi62LdNj/urk1hfmj867I3qt6uZ7Q==}
@@ -1622,8 +1622,8 @@ packages:
   fn.name@1.1.0:
     resolution: {integrity: sha512-GRnmB5gPyJpAhTQdSZTSp9uaPSvl09KoYcMQtsB9rQoOmzs9dH6ffeccH+Z+cv6P68Hu5bC6JjRh4Ah/mHSNRw==}
 
-  follow-redirects@1.15.11:
-    resolution: {integrity: sha512-deG2P0JfjrTxl50XGCDyfI97ZGVCxIpfKYmfyrQ54n5FO/0gfIES8C/Psl6kWVDolizcaaxZJnTS0QSMxvnsBQ==}
+  follow-redirects@1.16.0:
+    resolution: {integrity: sha512-y5rN/uOsadFT/JfYwhxRS5R7Qce+g3zG97+JrtFZlC9klX/W5hD7iiLzScI4nZqUS7DNUdhPgw4xI8W2LuXlUw==}
     engines: {node: '>=4.0'}
     peerDependencies:
       debug: '*'
@@ -1774,6 +1774,10 @@ packages:
 
   hasown@2.0.2:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
+    engines: {node: '>= 0.4'}
+
+  hasown@2.0.4:
+    resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
 
   hexoid@2.0.0:
@@ -2425,8 +2429,8 @@ packages:
     resolution: {integrity: sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==}
     engines: {node: '>= 0.6.0'}
 
-  proxy-from-env@https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110:
-    resolution: {tarball: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110}
+  proxy-from-env@git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56:
+    resolution: {commit: 0be391ca8b2f9c2f52560257d67ab290df211e56, repo: git@github.com:orgads/proxy-from-env.git, type: git}
     version: 1.1.0
 
   punycode@2.3.1:
@@ -2810,6 +2814,7 @@ packages:
 
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   v8flags@4.0.1:
@@ -3563,7 +3568,7 @@ snapshots:
 
   '@n8n/client-oauth2@0.31.0':
     dependencies:
-      axios: 1.13.2
+      axios: 1.16.0
     transitivePeerDependencies:
       - debug
 
@@ -4583,11 +4588,11 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios@1.13.2:
+  axios@1.16.0:
     dependencies:
-      follow-redirects: 1.15.11
+      follow-redirects: 1.16.0
       form-data: 4.0.5
-      proxy-from-env: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110
+      proxy-from-env: git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56
     transitivePeerDependencies:
       - debug
 
@@ -4952,7 +4957,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.2
+      hasown: 2.0.4
 
   es-shim-unscopables@1.1.0:
     dependencies:
@@ -5226,7 +5231,7 @@ snapshots:
 
   fn.name@1.1.0: {}
 
-  follow-redirects@1.15.11: {}
+  follow-redirects@1.16.0: {}
 
   for-each@0.3.5:
     dependencies:
@@ -5243,7 +5248,7 @@ snapshots:
       asynckit: 0.4.0
       combined-stream: 1.0.8
       es-set-tostringtag: 2.1.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       mime-types: 2.1.35
 
   forwarded-parse@2.1.2: {}
@@ -5406,6 +5411,10 @@ snapshots:
       has-symbols: 1.1.0
 
   hasown@2.0.2:
+    dependencies:
+      function-bind: 1.1.2
+
+  hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
 
@@ -5822,7 +5831,7 @@ snapshots:
       '@n8n/di': 0.9.0
       '@sentry/node': 9.47.1
       '@sentry/node-native': 9.47.1
-      axios: 1.13.2
+      axios: 1.16.0
       callsites: 3.1.0
       chardet: 2.0.0
       cron: 3.1.7
@@ -5843,7 +5852,7 @@ snapshots:
       p-cancelable: 2.1.1
       picocolors: 1.0.1
       pretty-bytes: 5.6.0
-      proxy-from-env: https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110
+      proxy-from-env: git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56
       qs: 6.11.0
       ssh2: 1.15.0
       uuid: 10.0.0
@@ -6087,7 +6096,7 @@ snapshots:
 
   process@0.11.10: {}
 
-  proxy-from-env@https://codeload.github.com/orgads/proxy-from-env/tar.gz/f37f8323a60cdaa3cc753fe1e9bed9a613170110: {}
+  proxy-from-env@git+https://git@github.com:orgads/proxy-from-env.git#0be391ca8b2f9c2f52560257d67ab290df211e56: {}
 
   punycode@2.3.1: {}
 
