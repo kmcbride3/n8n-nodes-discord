@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.0",
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.1.1",
     "@types/node-ipc": "^9.2.3",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
