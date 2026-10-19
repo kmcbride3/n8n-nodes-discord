@@ -1,9 +1,8 @@
 import type { INodeProperties } from 'n8n-workflow'
 
-import * as interactionManager from './interactionManager.operation'
 import * as utility from './utility.operation'
 
-export { interactionManager, utility }
+export { utility }
 
 export const description: INodeProperties[] = [
   {
@@ -23,15 +22,8 @@ export const description: INodeProperties[] = [
         description: 'Perform utility actions like clearing placeholders or updating bot status',
         action: 'Perform utility action',
       },
-      {
-        name: 'Interaction Manager',
-        value: 'interactionManager',
-        description: 'Manage Discord.js Collections and interaction state',
-        action: 'Manage interactions',
-      },
     ],
     default: 'utility',
   },
   ...utility.properties,
-  ...interactionManager.properties,
 ]

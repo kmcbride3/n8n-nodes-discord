@@ -48,12 +48,6 @@ export function validateRegexPattern(pattern: string, context = 'regex'): void {
     throw new SecurityValidationError(`Invalid ${context}: Pattern must be a non-empty string`)
   }
 
-  try {
-    verifyString(pattern, Error, `Invalid ${context}: Pattern must be a non-empty string`, false)
-  } catch {
-    throw new SecurityValidationError(`Invalid ${context}: Pattern must be a non-empty string`)
-  }
-
   // Check length
   if (pattern.length > MAX_REGEX_LENGTH) {
     throw new SecurityValidationError(
@@ -87,13 +81,8 @@ export function validateRegexPattern(pattern: string, context = 'regex'): void {
 export function safeRegexTest(pattern: string, input: string, flags = 'i'): boolean {
   validateRegexPattern(pattern, 'regex pattern')
 
-  // Use Discord.js string validation for input
-  try {
-    verifyString(input, undefined, undefined, true) // Allow empty strings for regex testing
-  } catch {
-    // If input validation fails, return false instead of throwing
-    return false
-  }
+  // Validate input is a string (empty strings are allowed — the regex may match empty)
+  if (typeof input !== 'string') return false
 
   const startTime = Date.now()
   const regex = new RegExp(pattern, flags)

@@ -1,4 +1,4 @@
-import { SlashCommandBooleanOption, SlashCommandBuilder } from 'discord.js'
+import { SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } from 'discord.js'
 
 import state from '../state'
 
@@ -9,7 +9,7 @@ export default {
     autoRemove: true, // remove the reply message
   },
 
-  registerCommand: () => {
+  registerCommand: (): SlashCommandOptionsOnlyBuilder => {
     return new SlashCommandBuilder()
       .setName(name)
       .setDescription('Toggle test mode')

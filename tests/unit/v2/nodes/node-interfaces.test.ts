@@ -95,7 +95,6 @@ jest.mock('../../../../src/nodes/Discord/v2/actions/event/getEventUsers.operatio
 jest.mock('../../../../src/nodes/Discord/v2/actions/webhook/createWebhook.operation', () => createMockOperation('createWebhook'))
 jest.mock('../../../../src/nodes/Discord/v2/actions/webhook/sendWebhook.operation', () => createMockOperation('sendWebhook'))
 jest.mock('../../../../src/nodes/Discord/v2/actions/utility/utility.operation', () => createMockOperation('utility'))
-jest.mock('../../../../src/nodes/Discord/v2/actions/utility/interactionManager.operation', () => createMockOperation('interactionManager'))
 
 import { DiscordV2 } from '../../../../src/nodes/Discord/v2/DiscordV2.node'
 import { DiscordGetV2 } from '../../../../src/nodes/Discord/v2/DiscordGetV2.node'

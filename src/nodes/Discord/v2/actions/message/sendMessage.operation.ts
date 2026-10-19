@@ -184,18 +184,16 @@ export const properties = updateDisplayOptions(
       description: 'The text content of the message to send.',
     },
     // Enhanced embed properties with full Discord.js support
-    ...getEnhancedEmbedProperties().map(
-      (prop): INodeProperties => ({
-        ...prop,
-        displayOptions: {
-          show: {
-            resource: ['message'],
-            operation: ['send'],
-            ...((prop.displayOptions as { show?: Record<string, unknown> })?.show || {}),
-          },
+    ...getEnhancedEmbedProperties().map((prop): INodeProperties => ({
+      ...prop,
+      displayOptions: {
+        show: {
+          resource: ['message'],
+          operation: ['send'],
+          ...((prop.displayOptions as { show?: Record<string, unknown> })?.show || {}),
         },
-      }),
-    ),
+      },
+    })),
     {
       displayName: 'Mention Roles',
       name: 'mentionRoles',

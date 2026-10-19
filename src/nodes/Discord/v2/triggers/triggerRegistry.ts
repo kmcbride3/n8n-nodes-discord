@@ -13,6 +13,7 @@
 
 import type {
   ChatInputCommandInteraction,
+  ClientEvents,
   GuildMember,
   Interaction,
   Message,
@@ -29,16 +30,21 @@ import type {
 import type { ITriggerFunctions } from 'n8n-workflow'
 
 import type { TriggerType } from '../triggerHelpers'
+import { applyBotFilter, applyMessageContentFilter } from './message-filters'
 
 /**
- * Trigger configuration interface
+ * Trigger configuration interface.
+ *
+ * Implementations in TRIGGER_REGISTRY are type-checked via defineTrigger() helper
+ * which preserves the concrete K event key. The interface itself uses `any[]` for
+ * the heterogeneous registry map — concrete argument types are validated per entry.
  */
 export interface TriggerConfig {
   /** TriggerType for intent validation and caching */
   triggerType: TriggerType
 
   /** Discord.js event name to listen to */
-  discordEvent: string
+  discordEvent: keyof ClientEvents
 
   /** Transform Discord.js event data to n8n workflow data */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,6 +56,19 @@ export interface TriggerConfig {
 }
 
 /**
+ * Strongly-typed helper for creating trigger registry entries.
+ * Ensures transformEvent and filter receive the correct discord.js event arguments.
+ */
+function defineTrigger<K extends keyof ClientEvents>(config: {
+  triggerType: TriggerType
+  discordEvent: K
+  transformEvent: (this: ITriggerFunctions, ...eventArgs: ClientEvents[K]) => Record<string, unknown> | null
+  filter?: (this: ITriggerFunctions, ...eventArgs: ClientEvents[K]) => boolean | Promise<boolean>
+}): TriggerConfig {
+  return config as TriggerConfig
+}
+
+/**
  * Central registry of all Discord triggers
  * Adding a new trigger is as simple as adding a configuration entry
  */
@@ -58,101 +77,13 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
   // MESSAGE TRIGGERS
   // ============================================================================
 
-  message: {
+  message: defineTrigger({
     triggerType: 'message',
     discordEvent: 'messageCreate',
     filter(message: Message) {
-      // Apply bot filtering based on user configuration
-      const botFilters = this.getNodeParameter('botFilters', 0, {}) as {
-        botBehavior?: 'ignoreAllBots' | 'ignoreSelf' | 'ignoreOthers' | 'allowAllBots'
-      }
-      const botBehavior = botFilters.botBehavior || 'ignoreAllBots'
-
-      if (message.author.bot) {
-        const selfId = message.client.user?.id
-        switch (botBehavior) {
-          case 'ignoreAllBots':
-            return false // Skip all bot messages
-          case 'ignoreSelf':
-            return message.author.id !== selfId // Skip only this bot's messages
-          case 'ignoreOthers':
-            return message.author.id === selfId // Only trigger on this bot's messages
-          case 'allowAllBots':
-            return true // Allow all bot messages
-        }
-      }
-
-      // Apply message filters
-      const messageFilters = this.getNodeParameter('messageFilters', 0, {}) as {
-        contentMatchType?: string
-        contentMatchPattern?: string
-        caseSensitive?: boolean
-        hasAttachments?: 'any' | 'with' | 'without'
-      }
-
-      // Content matching
-      const matchType = messageFilters.contentMatchType || 'any'
-      const pattern = messageFilters.contentMatchPattern || ''
-      const caseSensitive = messageFilters.caseSensitive || false
-
-      if (matchType !== 'any') {
-        // mentionsBot doesn't require a pattern
-        if (matchType === 'mentionsBot') {
-          if (!message.mentions.has(message.client.user!)) return false
-        } else if (pattern) {
-          // All other match types require a pattern
-          const content = caseSensitive ? message.content : message.content.toLowerCase()
-          const searchPattern = caseSensitive ? pattern : pattern.toLowerCase()
-
-          switch (matchType) {
-            case 'contains':
-              if (!content.includes(searchPattern)) return false
-              break
-            case 'exact':
-              if (content !== searchPattern) return false
-              break
-            case 'startsWith':
-              if (!content.startsWith(searchPattern)) return false
-              break
-            case 'endsWith':
-              if (!content.endsWith(searchPattern)) return false
-              break
-            case 'regex':
-              try {
-                const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
-                if (!regex.test(message.content)) return false
-              } catch {
-                return false // Invalid regex
-              }
-              break
-            case 'mentionsUser':
-              // Support both <@123456789> format and plain ID
-              const userId = pattern.replace(/[<@!>]/g, '')
-              if (!message.mentions.users.has(userId)) return false
-              break
-            case 'mentionsRole':
-              // Support both <@&123456789> format, plain ID, and role name
-              const rolePattern = pattern.replace(/[<@&>]/g, '')
-              const hasRoleMention = message.mentions.roles.some(
-                (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
-              )
-              if (!hasRoleMention) return false
-              break
-            case 'mentionsChannel':
-              // Support both <#123456789> format and plain ID
-              const channelId = pattern.replace(/[<#>]/g, '')
-              if (!message.mentions.channels.has(channelId)) return false
-              break
-          }
-        }
-      }
-
-      // Attachment filtering
-      const hasAttachments = messageFilters.hasAttachments || 'any'
-      if (hasAttachments === 'with' && message.attachments.size === 0) return false
-      if (hasAttachments === 'without' && message.attachments.size > 0) return false
-
-      return true
+      const botResult = applyBotFilter(this, message.author.bot, message.author.id, message.client.user?.id)
+      if (botResult !== undefined) return botResult
+      return applyMessageContentFilter(this, message)
     },
     transformEvent(message: Message) {
       return {
@@ -165,103 +96,23 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: message.createdAt.toISOString(),
       }
     },
-  },
+  }),
 
-  message_update: {
+  message_update: defineTrigger({
     triggerType: 'message_update',
     discordEvent: 'messageUpdate',
     filter(oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage) {
       // Skip partial messages
       if (newMessage.partial) return false
-
       const fullMessage = newMessage as Message
-
-      // Apply bot filtering based on user configuration
-      const botFilters = this.getNodeParameter('botFilters', 0, {}) as {
-        botBehavior?: 'ignoreAllBots' | 'ignoreSelf' | 'ignoreOthers' | 'allowAllBots'
-      }
-      const botBehavior = botFilters.botBehavior || 'ignoreAllBots'
-
-      if (fullMessage.author?.bot) {
-        const selfId = fullMessage.client.user?.id
-        switch (botBehavior) {
-          case 'ignoreAllBots':
-            return false
-          case 'ignoreSelf':
-            return fullMessage.author.id !== selfId
-          case 'ignoreOthers':
-            return fullMessage.author.id === selfId
-          case 'allowAllBots':
-            return true
-        }
-      }
-
-      // Apply message filters (same logic as message trigger)
-      const messageFilters = this.getNodeParameter('messageFilters', 0, {}) as {
-        contentMatchType?: string
-        contentMatchPattern?: string
-        caseSensitive?: boolean
-        hasAttachments?: 'any' | 'with' | 'without'
-      }
-
-      const matchType = messageFilters.contentMatchType || 'any'
-      const pattern = messageFilters.contentMatchPattern || ''
-      const caseSensitive = messageFilters.caseSensitive || false
-
-      if (matchType !== 'any') {
-        // mentionsBot doesn't require a pattern
-        if (matchType === 'mentionsBot') {
-          if (!fullMessage.mentions.has(fullMessage.client.user!)) return false
-        } else if (pattern) {
-          // All other match types require a pattern
-          const content = caseSensitive ? fullMessage.content : fullMessage.content.toLowerCase()
-          const searchPattern = caseSensitive ? pattern : pattern.toLowerCase()
-
-          switch (matchType) {
-            case 'contains':
-              if (!content.includes(searchPattern)) return false
-              break
-            case 'exact':
-              if (content !== searchPattern) return false
-              break
-            case 'startsWith':
-              if (!content.startsWith(searchPattern)) return false
-              break
-            case 'endsWith':
-              if (!content.endsWith(searchPattern)) return false
-              break
-            case 'regex':
-              try {
-                const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
-                if (!regex.test(fullMessage.content)) return false
-              } catch {
-                return false
-              }
-              break
-            case 'mentionsUser':
-              const userId = pattern.replace(/[<@!>]/g, '')
-              if (!fullMessage.mentions.users.has(userId)) return false
-              break
-            case 'mentionsRole':
-              const rolePattern = pattern.replace(/[<@&>]/g, '')
-              const hasRoleMention = fullMessage.mentions.roles.some(
-                (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
-              )
-              if (!hasRoleMention) return false
-              break
-            case 'mentionsChannel':
-              const channelId = pattern.replace(/[<#>]/g, '')
-              if (!fullMessage.mentions.channels.has(channelId)) return false
-              break
-          }
-        }
-      }
-
-      const hasAttachments = messageFilters.hasAttachments || 'any'
-      if (hasAttachments === 'with' && fullMessage.attachments.size === 0) return false
-      if (hasAttachments === 'without' && fullMessage.attachments.size > 0) return false
-
-      return true
+      const botResult = applyBotFilter(
+        this,
+        Boolean(fullMessage.author?.bot),
+        fullMessage.author?.id ?? '',
+        fullMessage.client.user?.id,
+      )
+      if (botResult !== undefined) return botResult
+      return applyMessageContentFilter(this, fullMessage)
     },
     transformEvent(oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage) {
       const fullMessage = newMessage as Message
@@ -275,101 +126,16 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         editedTimestamp: fullMessage.editedAt?.toISOString() || new Date().toISOString(),
       }
     },
-  },
+  }),
 
-  directMessage: {
+  directMessage: defineTrigger({
     triggerType: 'directMessage',
     discordEvent: 'messageCreate',
     filter(message: Message) {
-      // Only trigger on DM messages (not guild messages)
       if (!message.channel.isDMBased()) return false
-
-      // Apply bot filtering based on user configuration
-      const botFilters = this.getNodeParameter('botFilters', 0, {}) as {
-        botBehavior?: 'ignoreAllBots' | 'ignoreSelf' | 'ignoreOthers' | 'allowAllBots'
-      }
-      const botBehavior = botFilters.botBehavior || 'ignoreAllBots'
-
-      if (message.author.bot) {
-        const selfId = message.client.user?.id
-        switch (botBehavior) {
-          case 'ignoreAllBots':
-            return false
-          case 'ignoreSelf':
-            return message.author.id !== selfId
-          case 'ignoreOthers':
-            return message.author.id === selfId
-          case 'allowAllBots':
-            return true
-        }
-      }
-
-      // Apply message filters (same logic as message trigger)
-      const messageFilters = this.getNodeParameter('messageFilters', 0, {}) as {
-        contentMatchType?: string
-        contentMatchPattern?: string
-        caseSensitive?: boolean
-        hasAttachments?: 'any' | 'with' | 'without'
-      }
-
-      const matchType = messageFilters.contentMatchType || 'any'
-      const pattern = messageFilters.contentMatchPattern || ''
-      const caseSensitive = messageFilters.caseSensitive || false
-
-      if (matchType !== 'any') {
-        // mentionsBot doesn't require a pattern
-        if (matchType === 'mentionsBot') {
-          if (!message.mentions.has(message.client.user!)) return false
-        } else if (pattern) {
-          // All other match types require a pattern
-          const content = caseSensitive ? message.content : message.content.toLowerCase()
-          const searchPattern = caseSensitive ? pattern : pattern.toLowerCase()
-
-          switch (matchType) {
-            case 'contains':
-              if (!content.includes(searchPattern)) return false
-              break
-            case 'exact':
-              if (content !== searchPattern) return false
-              break
-            case 'startsWith':
-              if (!content.startsWith(searchPattern)) return false
-              break
-            case 'endsWith':
-              if (!content.endsWith(searchPattern)) return false
-              break
-            case 'regex':
-              try {
-                const regex = new RegExp(pattern, caseSensitive ? '' : 'i')
-                if (!regex.test(message.content)) return false
-              } catch {
-                return false
-              }
-              break
-            case 'mentionsUser':
-              const userId = pattern.replace(/[<@!>]/g, '')
-              if (!message.mentions.users.has(userId)) return false
-              break
-            case 'mentionsRole':
-              const rolePattern = pattern.replace(/[<@&>]/g, '')
-              const hasRoleMention = message.mentions.roles.some(
-                (role) => role.id === rolePattern || role.name.toLowerCase() === searchPattern,
-              )
-              if (!hasRoleMention) return false
-              break
-            case 'mentionsChannel':
-              const channelId = pattern.replace(/[<#>]/g, '')
-              if (!message.mentions.channels.has(channelId)) return false
-              break
-          }
-        }
-      }
-
-      const hasAttachments = messageFilters.hasAttachments || 'any'
-      if (hasAttachments === 'with' && message.attachments.size === 0) return false
-      if (hasAttachments === 'without' && message.attachments.size > 0) return false
-
-      return true
+      const botResult = applyBotFilter(this, message.author.bot, message.author.id, message.client.user?.id)
+      if (botResult !== undefined) return botResult
+      return applyMessageContentFilter(this, message)
     },
     transformEvent(message: Message) {
       return {
@@ -389,13 +155,13 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         })),
       }
     },
-  },
+  }),
 
   // ============================================================================
   // REACTION TRIGGERS
   // ============================================================================
 
-  reactionAdd: {
+  reactionAdd: defineTrigger({
     triggerType: 'reactionAdd',
     discordEvent: 'messageReactionAdd',
     async filter(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
@@ -445,9 +211,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
-  reactionRemove: {
+  reactionRemove: defineTrigger({
     triggerType: 'reactionRemove',
     discordEvent: 'messageReactionRemove',
     async filter(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
@@ -497,13 +263,13 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
   // ============================================================================
   // THREAD TRIGGERS
   // ============================================================================
 
-  thread: {
+  thread: defineTrigger({
     triggerType: 'thread',
     discordEvent: 'threadCreate',
     transformEvent(thread: ThreadChannel) {
@@ -521,9 +287,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         messageCount: thread.messageCount,
       }
     },
-  },
+  }),
 
-  thread_update: {
+  thread_update: defineTrigger({
     triggerType: 'thread_update',
     discordEvent: 'threadUpdate',
     transformEvent(oldThread: ThreadChannel, newThread: ThreadChannel) {
@@ -544,13 +310,13 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         updatedAt: new Date().toISOString(),
       }
     },
-  },
+  }),
 
   // ============================================================================
   // COMMAND/INTERACTION TRIGGERS
   // ============================================================================
 
-  command: {
+  command: defineTrigger({
     triggerType: 'command',
     discordEvent: 'interactionCreate',
     filter(interaction: Interaction) {
@@ -605,9 +371,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
-  interaction: {
+  interaction: defineTrigger({
     triggerType: 'interaction',
     discordEvent: 'interactionCreate',
     filter(interaction: Interaction) {
@@ -648,13 +414,13 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
   // ============================================================================
   // USER/MEMBER TRIGGERS
   // ============================================================================
 
-  userJoins: {
+  userJoins: defineTrigger({
     triggerType: 'userJoins',
     discordEvent: 'guildMemberAdd',
     filter(member: GuildMember) {
@@ -682,9 +448,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         })),
       }
     },
-  },
+  }),
 
-  userLeaves: {
+  userLeaves: defineTrigger({
     triggerType: 'userLeaves',
     discordEvent: 'guildMemberRemove',
     filter(member: GuildMember | PartialGuildMember) {
@@ -704,9 +470,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         leftAt: new Date().toISOString(),
       }
     },
-  },
+  }),
 
-  userUpdate: {
+  userUpdate: defineTrigger({
     triggerType: 'userUpdate',
     discordEvent: 'guildMemberUpdate',
     filter(oldMember: GuildMember | PartialGuildMember, newMember: GuildMember) {
@@ -743,9 +509,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
-  presenceUpdate: {
+  presenceUpdate: defineTrigger({
     triggerType: 'presenceUpdate',
     discordEvent: 'presenceUpdate',
     filter(oldPresence: Presence | null, newPresence: Presence) {
@@ -769,9 +535,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
-  userNickUpdated: {
+  userNickUpdated: defineTrigger({
     triggerType: 'userNickUpdated',
     discordEvent: 'guildMemberUpdate',
     filter(oldMember: GuildMember | PartialGuildMember, newMember: GuildMember) {
@@ -795,9 +561,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
-  userRoleAdded: {
+  userRoleAdded: defineTrigger({
     triggerType: 'userRoleAdded',
     discordEvent: 'guildMemberUpdate',
     filter(oldMember: GuildMember | PartialGuildMember, newMember: GuildMember) {
@@ -828,9 +594,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
-  userRoleRemoved: {
+  userRoleRemoved: defineTrigger({
     triggerType: 'userRoleRemoved',
     discordEvent: 'guildMemberUpdate',
     filter(oldMember: GuildMember | PartialGuildMember, newMember: GuildMember) {
@@ -861,13 +627,13 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
   // ============================================================================
   // ROLE LIFECYCLE TRIGGERS
   // ============================================================================
 
-  roleCreate: {
+  roleCreate: defineTrigger({
     triggerType: 'roleCreate',
     discordEvent: 'roleCreate',
     filter(role: Role) {
@@ -889,9 +655,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
-  roleDelete: {
+  roleDelete: defineTrigger({
     triggerType: 'roleDelete',
     discordEvent: 'roleDelete',
     filter(role: Role) {
@@ -913,9 +679,9 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 
-  roleUpdate: {
+  roleUpdate: defineTrigger({
     triggerType: 'roleUpdate',
     discordEvent: 'roleUpdate',
     filter(oldRole: Role, newRole: Role) {
@@ -960,5 +726,5 @@ export const TRIGGER_REGISTRY: Record<string, TriggerConfig> = {
         timestamp: new Date().toISOString(),
       }
     },
-  },
+  }),
 }

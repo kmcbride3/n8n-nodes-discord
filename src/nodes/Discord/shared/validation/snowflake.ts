@@ -5,6 +5,7 @@
  * instead of custom regex patterns, ensuring compatibility and accuracy.
  */
 
+import type { DeconstructedSnowflake } from 'discord.js'
 import { SnowflakeUtil } from 'discord.js'
 import type { INode } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
@@ -115,7 +116,7 @@ export function getSnowflakeTimestamp(id: string, node?: INode): number {
  * console.log(`Timestamp: ${decoded.timestamp}`);
  * console.log(`Worker ID: ${decoded.workerId}, Process ID: ${decoded.processId}`);
  */
-export function decodeSnowflake(id: string, node?: INode) {
+export function decodeSnowflake(id: string, node?: INode): DeconstructedSnowflake {
   if (!isValidSnowflake(id)) {
     const error = new NodeOperationError(
       node || ({ type: 'n8n-nodes-discord.snowflake' } as INode),

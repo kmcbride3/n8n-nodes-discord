@@ -31,19 +31,6 @@ const TEST_SUITES: TestSuite[] = [
       'Channel and guild ID validation',
     ],
   },
-  {
-    name: 'connection-optimization',
-    description: 'Phase 3.1 - Connection optimization and client pooling',
-    category: 'unit',
-    tests: [
-      'V2OperationType enum validation',
-      'Intent optimization mapping',
-      'Client pooling mechanics',
-      'Connection lifecycle management',
-      'Error handling scenarios',
-    ],
-  },
-
   // Integration Tests
   {
     name: 'v2-operations',

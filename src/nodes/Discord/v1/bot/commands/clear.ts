@@ -1,4 +1,10 @@
-import { Interaction, SlashCommandBuilder, SlashCommandIntegerOption, TextChannel } from 'discord.js'
+import {
+  Interaction,
+  SlashCommandBuilder,
+  SlashCommandIntegerOption,
+  SlashCommandOptionsOnlyBuilder,
+  TextChannel,
+} from 'discord.js'
 import { LoggerProxy } from 'n8n-workflow'
 
 const name = 'clear'
@@ -8,7 +14,7 @@ export default {
     autoRemove: true, // remove the reply message
   },
 
-  registerCommand: () => {
+  registerCommand: (): SlashCommandOptionsOnlyBuilder => {
     return new SlashCommandBuilder()
       .setName(name)
       .setDescription('Delete messages')

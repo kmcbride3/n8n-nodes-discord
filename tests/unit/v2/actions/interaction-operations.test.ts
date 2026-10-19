@@ -17,6 +17,16 @@ jest.mock('n8n-workflow', () => ({
 	updateDisplayOptions: jest.fn((options) => options.properties || []),
 }));
 
+// Mock V2 credential helpers so editReply/followUp tests don't require a live Discord client
+jest.mock('../../../../src/nodes/Discord/v2/helpers/v2-credentials', () => ({
+	getV2DiscordCredentials: jest.fn().mockResolvedValue({ token: 'test-bot-token' }),
+	createV2DiscordClient: jest.fn().mockResolvedValue({
+		isReady: () => true,
+		application: { id: 'test_app_123' },
+	}),
+	releaseV2DiscordClientByInstance: jest.fn().mockResolvedValue(undefined),
+}));
+
 import * as replyOperation from '../../../../src/nodes/Discord/v2/actions/interaction/reply.operation';
 import * as deferReplyOperation from '../../../../src/nodes/Discord/v2/actions/interaction/deferReply.operation';
 import * as editReplyOperation from '../../../../src/nodes/Discord/v2/actions/interaction/editReply.operation';

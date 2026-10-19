@@ -74,18 +74,16 @@ export const properties = updateDisplayOptions(
       description: 'Send the webhook message to a specific thread (Discord.js v14 feature)',
     },
     // Embed properties using centralized enhanced embed builder
-    ...getEnhancedEmbedProperties().map(
-      (prop): INodeProperties => ({
-        ...prop,
-        displayOptions: {
-          show: {
-            resource: ['webhook'],
-            operation: ['send'],
-            ...(prop.displayOptions?.show || {}),
-          },
+    ...getEnhancedEmbedProperties().map((prop): INodeProperties => ({
+      ...prop,
+      displayOptions: {
+        show: {
+          resource: ['webhook'],
+          operation: ['send'],
+          ...(prop.displayOptions?.show || {}),
         },
-      }),
-    ),
+      },
+    })),
   ],
 )
 

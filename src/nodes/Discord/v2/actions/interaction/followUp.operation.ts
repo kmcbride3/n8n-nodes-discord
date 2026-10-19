@@ -5,20 +5,24 @@
  * Can be used to send additional messages without replacing the original
  */
 
+import type { Client } from 'discord.js'
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
+import { NodeOperationError } from 'n8n-workflow'
 
 import {
   applyEphemeralFlag,
   buildInteractionUrl,
+  createV2DiscordClient,
   executeV2Operation,
-  getApplicationId,
+  getV2DiscordCredentials,
+  releaseV2DiscordClientByInstance,
   updateDisplayOptions,
   validateInteractionToken,
 } from '../../helpers'
 
 interface IDiscordBotCredentials {
-  botToken: string
-  applicationId: string
+  token: string
+  client: Client
 }
 
 export const properties = updateDisplayOptions(
@@ -69,10 +73,9 @@ export const properties = updateDisplayOptions(
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
   return executeV2Operation<IDiscordBotCredentials>(this, {
     getCredentials: async (ctx) => {
-      const credentials = await ctx.getCredentials('discordBotApi')
-      const botToken = credentials.botToken as string
-      const applicationId = getApplicationId(botToken)
-      return { botToken, applicationId }
+      const credentials = await getV2DiscordCredentials.call(ctx)
+      const client = await createV2DiscordClient.call(ctx, credentials)
+      return { token: credentials.token, client }
     },
     operation: async (ctx, credentials, itemIndex) => {
       const interactionToken = ctx.getNodeParameter('interactionToken', itemIndex) as string
@@ -82,6 +85,14 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
       // Validate interaction token using helper
       validateInteractionToken(interactionToken, ctx, itemIndex)
 
+      const applicationId = credentials.client.application?.id
+      if (!applicationId) {
+        throw new NodeOperationError(ctx.getNode(), 'Could not resolve application ID from Discord client', {
+          itemIndex,
+          description: 'Ensure the bot is properly connected to Discord before using interaction operations.',
+        })
+      }
+
       // Build request payload with ephemeral flag if needed
       const payload: IDataObject = {
         content,
@@ -90,7 +101,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 
       // Build webhook URL using helper
       const url = buildInteractionUrl('webhook', {
-        applicationId: credentials.applicationId,
+        applicationId,
         token: interactionToken,
       })
 
@@ -99,7 +110,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
         method: 'POST',
         url,
         headers: {
-          Authorization: `Bot ${credentials.botToken}`,
+          Authorization: `Bot ${credentials.token}`,
           'Content-Type': 'application/json',
         },
         body: finalPayload,
@@ -117,6 +128,9 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
         },
         pairedItem: { item: itemIndex },
       }
+    },
+    cleanup: async (_ctx, credentials) => {
+      await releaseV2DiscordClientByInstance(credentials.client)
     },
   })
 }

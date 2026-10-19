@@ -9,7 +9,7 @@ import * as message from './message'
 import { sendButton, sendSelect } from './prompt'
 import * as role from './role'
 import * as user from './user'
-import { interactionManager, utility } from './utility'
+import { utility } from './utility'
 import { createWebhook, sendWebhook } from './webhook'
 
 export async function router(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -103,9 +103,6 @@ export async function router(this: IExecuteFunctions): Promise<INodeExecutionDat
         switch (operation) {
           case 'utility':
             executionData = await utility.execute.call(this)
-            break
-          case 'interactionManager':
-            executionData = await interactionManager.execute.call(this)
             break
           default:
             throw new NodeOperationError(this.getNode(), `Unknown utility operation: ${operation}`)

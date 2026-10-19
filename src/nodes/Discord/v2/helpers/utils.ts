@@ -2,8 +2,6 @@ import { DiscordAPIError, HTTPError, RateLimitError } from 'discord.js'
 import type { IExecuteFunctions, JsonObject } from 'n8n-workflow'
 import { jsonParse, NodeOperationError, updateDisplayOptions } from 'n8n-workflow'
 
-import type { IDiscordPerformanceMetrics } from './types'
-
 // Define error interface for better type safety
 type DiscordError = Error | DiscordAPIError | HTTPError | RateLimitError
 
@@ -15,67 +13,6 @@ interface DiscordApiError {
     [key: string]: unknown
   }
   [key: string]: unknown
-}
-
-/**
- * Creates performance metrics for Discord API operations
- * @param startTime - Start time in milliseconds
- * @param endTime - End time in milliseconds
- * @param method - HTTP method used
- * @param endpoint - API endpoint called
- * @param operation - Operation name (default: 'discord-api')
- * @param success - Whether the operation was successful
- * @param statusCode - HTTP status code
- * @param errorMessage - Error message if operation failed
- * @returns Performance metrics object
- */
-export function createPerformanceMetrics(
-  startTime: number,
-  endTime: number,
-  method: string,
-  endpoint: string,
-  operation = 'discord-api',
-  success = true,
-  statusCode?: number,
-  errorMessage?: string,
-): IDiscordPerformanceMetrics {
-  return {
-    operation,
-    startTime,
-    endTime,
-    duration: endTime - startTime,
-    method,
-    endpoint,
-    success,
-    statusCode,
-    errorMessage,
-  }
-}
-
-/**
- * Measure Discord API performance
- */
-export function measureDiscordApiPerformance(
-  startTime: number,
-  endTime: number,
-  method: string,
-  endpoint: string,
-  operation = 'discord-api',
-  success = true,
-  statusCode?: number,
-  errorMessage?: string,
-): IDiscordPerformanceMetrics {
-  return {
-    operation,
-    startTime,
-    endTime,
-    duration: endTime - startTime,
-    method,
-    endpoint,
-    success,
-    statusCode,
-    errorMessage,
-  }
 }
 
 // Re-export from shared location to maintain backward compatibility

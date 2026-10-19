@@ -6,7 +6,7 @@
  */
 
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
-import { NodeOperationError } from 'n8n-workflow'
+import { LoggerProxy, NodeOperationError } from 'n8n-workflow'
 
 /**
  * Operation function type for V2 operations
@@ -112,7 +112,9 @@ export async function executeV2Operation<TCredentials = unknown>(
       await config.cleanup(context, credentials)
     } catch (error) {
       // Log cleanup errors but don't fail the operation
-      console.warn('Operation cleanup failed:', error.message)
+      LoggerProxy.warn('Discord operation cleanup failed', {
+        error: error instanceof Error ? error.message : String(error),
+      })
     }
   }
 

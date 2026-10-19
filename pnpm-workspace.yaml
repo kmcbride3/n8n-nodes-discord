@@ -1,0 +1,29 @@
+allowBuilds:
+  '@parcel/watcher': true
+  bufferutil: true
+  cpu-features: true
+  eslint-plugin-n8n-nodes-base: true
+  isolated-vm: true
+  ssh2: true
+  unrs-resolver: true
+  utf-8-validate: true
+  zlib-sync: true
+
+overrides:
+  braces: 'npm:@franciscosolis/braces@^3.1.1'
+  basic-ftp: ^6.2.3
+  event-pubsub: ^6.1.1
+  glob: ^13.0.6
+  '@typescript-eslint/utils': ^8.71.2
+  form-data: ^4.0.6
+  handlebars: ^4.7.10
+  katext: ^0.19.0
+  qs: ^6.16.1
+  lodash: ^4.18.1
+  undici: ^8.12.2
+  parse-url: ^11.1.0
+  js-yaml: ^5.5.0
+  eslint: ^10.13.0
+  minimatch: ^10.2.6
+  stream-json: ^3.7.0
+  uuid: ^14.0.3

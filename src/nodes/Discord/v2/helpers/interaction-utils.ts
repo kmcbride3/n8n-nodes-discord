@@ -10,33 +10,6 @@ import type { IDataObject, IExecuteFunctions } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
 /**
- * Extract application ID from Discord bot token
- *
- * Discord bot tokens are encoded as base64(applicationId).timestamp.hmac
- * This function decodes the application ID from the token.
- *
- * @param botToken - Discord bot token
- * @returns Application ID extracted from token
- * @throws Error if token format is invalid
- *
- * @example
- * const appId = getApplicationId('MTIzNDU2Nzg5MDEyMzQ1Njc4.GhjKLm.xyz123...')
- * // Returns: '123456789012345678'
- */
-export function getApplicationId(botToken: string): string {
-  const parts = botToken.split('.')
-  if (parts.length < 3) {
-    throw new Error('Invalid bot token format - expected format: base64(appId).timestamp.hmac')
-  }
-
-  try {
-    return Buffer.from(parts[0], 'base64').toString('utf-8')
-  } catch (error) {
-    throw new Error(`Failed to decode application ID from token: ${error.message}`)
-  }
-}
-
-/**
  * Validate interaction token and throw appropriate error if missing
  *
  * @param token - Interaction token to validate

@@ -1,15 +1,10 @@
-import type { Client, MessageComponentInteraction } from 'discord.js'
+import type { Client, MessageCreateOptions } from 'discord.js'
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
 import { LoggerProxy, NodeOperationError } from 'n8n-workflow'
 
 import { generateUniqueId } from '../../../helpers'
 import type { IV2DiscordCredentials } from '../../helpers'
-import {
-  discordStateManager,
-  executeV2OperationWithClient,
-  sendChannelMessage,
-  updateDisplayOptions,
-} from '../../helpers'
+import { executeV2OperationWithClient, updateDisplayOptions } from '../../helpers'
 import { createActionRow, createSelectMenuComponent } from '../../helpers/builders'
 import { buildFileAttachments, getFileAttachmentProperty } from '../../helpers/file-attachments'
 
@@ -105,110 +100,87 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
       const { createV2DiscordClient, getV2DiscordCredentials } = await import('../../helpers')
       const credentials = await getV2DiscordCredentials.call(ctx)
       const client = await createV2DiscordClient.call(ctx, credentials)
-
-      if (!client) {
-        throw new NodeOperationError(ctx.getNode(), 'Discord client is required for interactive select operations')
-      }
-
-      // Set client in state manager
-      discordStateManager.setClient(client)
-
       return { ...credentials, client }
     },
     operation: async (ctx, { client }, itemIndex) => {
-      // Get parameters from the node
       const channelId = ctx.getNodeParameter('channelId', itemIndex) as string
       const content = ctx.getNodeParameter('content', itemIndex) as string
       const selectData = ctx.getNodeParameter('select', itemIndex) as IDataObject
 
-      // Extract options array from the fixedCollection structure
       const optionArray = selectData.select as IDataObject[]
-
       if (!optionArray || optionArray.length === 0) {
-        throw new NodeOperationError(ctx.getNode(), 'At least one select option is required')
+        throw new NodeOperationError(ctx.getNode(), 'At least one select option is required', { itemIndex })
       }
 
-      // Process file attachments
       const files = await buildFileAttachments(ctx, itemIndex)
 
-      // Create select menu options
       const options = optionArray.map((option) => ({
         label: option.label as string,
         value: option.value as string,
         description: (option.description as string) || undefined,
       }))
 
-      // Create select menu component with consistent customId
       const customId = generateUniqueId(8)
-      const selectMenu = createSelectMenuComponent(
-        customId, // customId
-        'Choose an option...', // placeholder
-        options, // options
-        false, // disabled
-        1, // minValues
-        1, // maxValues
-      )
-
-      // Create action row with select menu
+      const selectMenu = createSelectMenuComponent(customId, 'Choose an option...', options, false, 1, 1)
       const components = [createActionRow([selectMenu])]
 
-      // Send message with select menu using Discord.js with client
-      const response = await sendChannelMessage.call(
-        ctx,
-        channelId,
+      // Fetch channel and send message directly to get the native Message object
+      const channel = await client.channels.fetch(channelId)
+      if (!channel || !channel.isTextBased() || !('send' in channel)) {
+        throw new NodeOperationError(ctx.getNode(), `Channel ${channelId} does not support sending messages`, {
+          itemIndex,
+        })
+      }
+
+      const messageOptions: MessageCreateOptions = {
         content,
-        {
-          components, // components
-        },
-        files.length > 0 ? files : undefined, // files
-        client, // Discord client
-      )
+        components: components as unknown as MessageCreateOptions['components'],
+      }
+      if (files.length > 0) messageOptions.files = files as MessageCreateOptions['files']
+      const sentMessage = await channel.send(messageOptions)
 
-      const messageId = response.id
-      const workflowId = ctx.getWorkflow().id
+      const timeoutSeconds = ctx.getNodeParameter('timeout', itemIndex) as number
+      const timeMs = Math.min(timeoutSeconds * 1000, 15 * 60 * 1000)
 
-      // Set up interaction collector with Discord.js Collections system and performance optimization
-      const collector = discordStateManager.createInteractionCollector(ctx, channelId, messageId, {
-        timeout: 5 * 60 * 1000, // 5 minutes optimized for select menu interactions
-        persistent: false, // Default to single-use
-        workflowId,
-        componentFilter: (interaction: MessageComponentInteraction) => {
-          // Performance-optimized filter: direct comparison
-          return interaction.customId === customId
-        },
+      const collector = sentMessage.createMessageComponentCollector({
+        filter: (i) => i.customId === customId,
+        time: timeMs,
+        max: 1,
       })
 
-      if (!collector) {
-        throw new NodeOperationError(ctx.getNode(), 'Failed to create interaction collector')
-      }
+      const selectedValues = await new Promise<string[]>((resolve) => {
+        collector.on('collect', (interaction) => {
+          const values = interaction.isStringSelectMenu() ? interaction.values : []
+          interaction
+            .deferUpdate()
+            .catch((err: unknown) => LoggerProxy.error('Failed to defer select interaction', { error: err }))
+          resolve(values)
+        })
+        collector.on('end', (_collected, reason) => {
+          if (reason !== 'limit') {
+            LoggerProxy.debug('Select collector ended without response', { messageId: sentMessage.id, reason })
+            resolve([])
+          }
+        })
+      })
 
       return {
         json: {
-          messageId: response.id,
-          channelId: response.channel_id || channelId,
-          content: response.content,
-          components: response.components,
+          messageId: sentMessage.id,
+          channelId,
+          content: sentMessage.content,
           customId,
-          collectorActive: discordStateManager.hasActiveCollector(messageId),
+          selectedValues,
           success: true,
-          // Include enhanced state manager statistics and performance metrics
-          stateStats: discordStateManager.getStats(),
-          performanceMetrics: discordStateManager.getPerformanceMetrics(),
-          memoryPressure: discordStateManager.getMemoryPressureStatus(),
-        },
+        } as IDataObject,
         pairedItem: { item: itemIndex },
       }
     },
-    cleanup: async (ctx, { client }) => {
-      // Clean up expired interactions
-      discordStateManager.cleanupExpiredInteractions()
-
-      try {
-        const { releaseV2DiscordClientByInstance } = await import('../../helpers')
-        await releaseV2DiscordClientByInstance(client)
-      } catch (e) {
-        LoggerProxy?.warn('Failed to release Discord client after select prompt operation', { error: e })
-      }
+    cleanup: async (_ctx, { client }) => {
+      const { releaseV2DiscordClientByInstance } = await import('../../helpers')
+      await releaseV2DiscordClientByInstance(client).catch((err) =>
+        LoggerProxy.warn('Failed to release Discord client after select prompt operation', { error: err }),
+      )
     },
   })
 }

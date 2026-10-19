@@ -48,10 +48,7 @@ export type TriggerType =
  * Valid interaction trigger types for Discord Interaction node
  */
 export type InteractionTriggerType =
-  | 'buttonInteraction'
-  | 'selectMenuInteraction'
-  | 'modalInteraction'
-  | 'commandInteraction'
+  'buttonInteraction' | 'selectMenuInteraction' | 'modalInteraction' | 'commandInteraction'
 
 /**
  * Required intents for each trigger type
@@ -446,11 +443,11 @@ export function setupClientErrorHandling(client: Client, nodeType: string): void
     })
   })
 
-  client.on('disconnect', () => {
-    LoggerProxy.info(`Discord client disconnected in ${nodeType}`)
+  client.on('shardDisconnect', (_event, shardId) => {
+    LoggerProxy.info(`Discord client shard ${shardId} disconnected in ${nodeType}`)
   })
 
-  client.on('reconnecting', () => {
-    LoggerProxy.info(`Discord client reconnecting in ${nodeType}`)
+  client.on('shardReconnecting', (shardId) => {
+    LoggerProxy.info(`Discord client shard ${shardId} reconnecting in ${nodeType}`)
   })
 }

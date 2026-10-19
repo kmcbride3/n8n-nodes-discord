@@ -1,30 +1,19 @@
 /**
  * Button Prompt Operation (Prompt Resource)
  *
- * ⚠️ ARCHITECTURE NOTE:
- * This operation differs from regular message sending by using a managed collector
- * via discordStateManager. This is intentional for the 'prompt' resource which is
- * designed for interactive prompt workflows.
+ * Sends an interactive button message and collects responses using Discord.js
+ * native message component collectors.
  *
  * For standard message sending with buttons (where you handle responses separately),
  * use the 'message' resource sendMessage operation instead.
- *
- * The 'prompt' resource maintains collectors for immediate interaction handling,
- * making it suitable for bot-like interactive prompts. Collectors are managed
- * centrally and cleaned up automatically.
  */
 
-import type { Client, MessageComponentInteraction } from 'discord.js'
+import type { Client, MessageComponentInteraction, MessageCreateOptions } from 'discord.js'
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
 import { LoggerProxy, NodeOperationError } from 'n8n-workflow'
 
 import type { IV2DiscordCredentials } from '../../helpers'
-import {
-  discordStateManager,
-  executeV2OperationWithClient,
-  sendChannelMessage,
-  updateDisplayOptions,
-} from '../../helpers'
+import { executeV2OperationWithClient, updateDisplayOptions } from '../../helpers'
 import { createActionRow, createButtonComponent } from '../../helpers/builders'
 import { buildFileAttachments, getFileAttachmentProperty } from '../../helpers/file-attachments'
 
@@ -174,18 +163,9 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
       const { createV2DiscordClient, getV2DiscordCredentials } = await import('../../helpers')
       const credentials = await getV2DiscordCredentials.call(ctx)
       const client = await createV2DiscordClient.call(ctx, credentials)
-
-      if (!client) {
-        throw new NodeOperationError(ctx.getNode(), 'Discord client is required for interactive button operations')
-      }
-
-      // Set client in state manager
-      discordStateManager.setClient(client)
-
       return { ...credentials, client }
     },
     operation: async (ctx, { client }, itemIndex) => {
-      // Get parameters from the node
       const channelId = ctx.getNodeParameter('channelId', itemIndex) as string
       const content = ctx.getNodeParameter('content', itemIndex) as string
       const buttonsData = ctx.getNodeParameter('buttons', itemIndex) as IDataObject
@@ -193,145 +173,99 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
       const timeoutSeconds = ctx.getNodeParameter('timeout', itemIndex) as number
       const waitForResponse = ctx.getNodeParameter('waitForResponse', itemIndex) as boolean
 
-      // Extract button array from the fixedCollection structure
       const buttonArray = buttonsData.button as IDataObject[]
-
       if (!buttonArray || buttonArray.length === 0) {
-        throw new NodeOperationError(ctx.getNode(), 'At least one button is required')
+        throw new NodeOperationError(ctx.getNode(), 'At least one button is required', { itemIndex })
       }
 
-      // Process file attachments
       const files = await buildFileAttachments(ctx, itemIndex)
 
-      // Create button components
       const buttons = buttonArray.map((button) =>
         createButtonComponent(
-          button.value as string, // customId
-          button.label as string, // label
-          (button.style as number) || 1, // style
-          undefined, // emoji
-          undefined, // url
-          false, // disabled
+          button.value as string,
+          button.label as string,
+          (button.style as number) || 1,
+          undefined,
+          undefined,
+          false,
         ),
       )
-
-      // Create action row with buttons
       const components = [createActionRow(buttons)]
 
-      // Send message with buttons using Discord.js with client
-      const response = await sendChannelMessage.call(
-        ctx,
-        channelId,
+      // Fetch channel and send message directly to get the native Message object
+      const channel = await client.channels.fetch(channelId)
+      if (!channel || !channel.isTextBased() || !('send' in channel)) {
+        throw new NodeOperationError(ctx.getNode(), `Channel ${channelId} does not support sending messages`, {
+          itemIndex,
+        })
+      }
+
+      const messageOptions: MessageCreateOptions = {
         content,
-        {
-          components, // components
-        },
-        files.length > 0 ? files : undefined, // files
-        client, // Discord client
-      )
-
-      const messageId = response.id
-      const workflowId = ctx.getWorkflow().id
-
-      // Set up interaction collector with Discord.js Collections system and performance optimization
-      const buttonValues = buttonArray.map((button) => button.value as string)
-      const optimizedTimeout = Math.min(timeoutSeconds * 1000, 15 * 60 * 1000) // Max 15 minutes (Discord.js limit)
-      const collectorOptions = {
-        timeout: optimizedTimeout,
-        persistent: collectionMode === 'persistent',
-        workflowId,
-        componentFilter: (interaction: MessageComponentInteraction) => {
-          // Performance-optimized filter: early return for efficiency
-          return buttonValues.includes(interaction.customId)
-        },
+        components: components as unknown as MessageCreateOptions['components'],
       }
+      if (files.length > 0) messageOptions.files = files as MessageCreateOptions['files']
+      const sentMessage = await channel.send(messageOptions)
 
-      const collector = discordStateManager.createInteractionCollector(ctx, channelId, messageId, collectorOptions)
+      const buttonValues = buttonArray.map((b) => b.value as string)
+      const timeMs = Math.min(timeoutSeconds * 1000, 15 * 60 * 1000)
 
-      if (!collector) {
-        throw new NodeOperationError(ctx.getNode(), 'Failed to create interaction collector')
-      }
+      const collector = sentMessage.createMessageComponentCollector({
+        filter: (i: MessageComponentInteraction) => buttonValues.includes(i.customId),
+        ...(collectionMode !== 'persistent' && { time: timeMs }),
+        ...(collectionMode === 'single' && { max: 1 }),
+      })
 
       const collectedInteractions: IDataObject[] = []
 
       if (waitForResponse) {
-        // Wait for interactions based on collection mode
-        const waitPromise = new Promise<void>((resolve) => {
+        await new Promise<void>((resolve) => {
           collector.on('collect', (interaction) => {
-            const interactionData = {
+            collectedInteractions.push({
               userId: interaction.user.id,
               userName: interaction.user.username,
               customId: interaction.customId,
               timestamp: new Date().toISOString(),
               channelId: interaction.channelId,
               messageId: interaction.message.id,
-            }
-
-            collectedInteractions.push(interactionData)
-
-            // For single mode, resolve after first interaction
+            })
+            interaction
+              .deferUpdate()
+              .catch((err: unknown) => LoggerProxy.error('Failed to defer button interaction', { error: err }))
             if (collectionMode === 'single') {
-              collector.stop('single_response_received')
-              resolve()
+              collector.stop()
             }
           })
 
-          collector.on('end', (collected, reason) => {
-            LoggerProxy.info(`Collector ended: ${reason}. Total interactions: ${collected.size}`)
+          collector.on('end', (_collected, reason) => {
+            LoggerProxy.debug('Button collector ended', { messageId: sentMessage.id, reason })
             resolve()
           })
 
-          // For persistent mode, we don't wait - the collector continues running
-          if (collectionMode === 'persistent') {
-            resolve()
-          }
+          if (collectionMode === 'persistent') resolve()
         })
-
-        // Wait for the collection to complete
-        await waitPromise
       }
-
-      // Prepare return data
-      const resultData: IDataObject = {
-        messageId: response.id,
-        channelId: response.channel_id || channelId,
-        content: response.content,
-        components: response.components,
-        collectionMode,
-        success: true,
-        collectorActive: discordStateManager.hasActiveCollector(messageId),
-      }
-
-      // Add interaction data if we collected any
-      if (collectedInteractions.length > 0) {
-        resultData.interactions = collectedInteractions
-        resultData.interactionCount = collectedInteractions.length
-      }
-
-      // Add enhanced state manager statistics and performance metrics
-      resultData.stateStats = discordStateManager.getStats()
-      resultData.performanceMetrics = discordStateManager.getPerformanceMetrics()
-      resultData.memoryPressure = discordStateManager.getMemoryPressureStatus()
 
       return {
-        json: resultData,
+        json: {
+          messageId: sentMessage.id,
+          channelId,
+          content: sentMessage.content,
+          collectionMode,
+          success: true,
+          ...(collectedInteractions.length > 0 && {
+            interactions: collectedInteractions,
+            interactionCount: collectedInteractions.length,
+          }),
+        },
         pairedItem: { item: itemIndex },
       }
     },
-    cleanup: async (ctx, { client }) => {
-      // Clean up expired interactions
-      try {
-        discordStateManager.cleanupExpiredInteractions()
-      } catch (err) {
-        LoggerProxy.warn('Failed during discordStateManager.cleanupExpiredInteractions', { error: err })
-      }
-
-      try {
-        const { releaseV2DiscordClientByInstance } = await import('../../helpers')
-        await releaseV2DiscordClientByInstance(client)
-      } catch (err) {
-        LoggerProxy.error('Failed to release Discord client instance', { error: err })
-      }
+    cleanup: async (_ctx, { client }) => {
+      const { releaseV2DiscordClientByInstance } = await import('../../helpers')
+      await releaseV2DiscordClientByInstance(client).catch((err) =>
+        LoggerProxy.error('Failed to release Discord client instance', { error: err }),
+      )
     },
   })
 }

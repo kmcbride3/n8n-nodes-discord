@@ -193,7 +193,7 @@ describe('Integration Scenarios', () => {
       // Step 1: Get credentials
       const credentials = await getV2DiscordCredentials.call(mockExecFunctions)
       expect(credentials).toBeDefined()
-      expect(credentials.type).toBe('botToken')
+      expect(credentials.token).toBe('test_bot_token')
 
       // Step 2: Create client
       const client = await createV2DiscordClient.call(mockExecFunctions, credentials)

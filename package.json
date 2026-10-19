@@ -25,8 +25,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "n8n-node build",
-    "build:watch": "tsc --watch",
+    "build": "tsc --build --clean && n8n-node build",
+    "build:watch": "tsc --watch --incremental false",
     "dev": "n8n-node dev",
     "lint": "n8n-node lint",
     "lint:fix": "n8n-node lint --fix",
@@ -61,64 +61,42 @@
       "dist/nodes/Discord/v2/DiscordTriggerV2.node.js"
     ]
   },
-  "pnpm": {
-    "overrides": {
-      "event-pubsub": "npm:@node-ipc/event-pubsub@^6.0.2",
-      "glob": "^13.0.5",
-      "@typescript-eslint/utils": "^8.54.0",
-      "form-data": "^4.0.4",
-      "qs": "^6.14.1",
-      "lodash": "^4.17.23",
-      "undici": "^6.23.0",
-      "parse-url": "^10.0.3",
-      "js-yaml@<3.14.2": ">=3.14.2",
-      "js-yaml@>=4.0.0 <4.1.1": ">=4.1.1",
-      "eslint": "^9.19.0",
-      "minimatch": "^10.2.1"
-    },
-    "onlyBuiltDependencies": [
-      "bufferutil",
-      "eslint-plugin-n8n-nodes-base",
-      "utf-8-validate",
-      "zlib-sync"
-    ]
-  },
   "devDependencies": {
-    "@eslint/compat": "^2.0.2",
+    "@eslint/compat": "^2.1.1",
     "@eslint/js": "^10.0.1",
-    "@eslint/markdown": "^7.5.1",
-    "@n8n/node-cli": "^0.20.0",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@eslint/markdown": "^8.0.3",
+    "@n8n/node-cli": "^0.52.5",
+    "openai": "^4.104.0",
+    "@testing-library/jest-dom": "^7.0.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.3.0",
+    "@types/node": "^26.6.5",
     "@types/node-ipc": "^9.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.56.0",
-    "@typescript-eslint/parser": "^8.56.0",
-    "eslint": "^9.39.3",
+    "@typescript-eslint/eslint-plugin": "^8.71.2",
+    "@typescript-eslint/parser": "^8.71.2",
+    "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-n8n-nodes-base": "^1.16.6",
-    "eslint-plugin-prettier": "^5.5.5",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-n8n-nodes-base": "^2.0.0",
+    "eslint-plugin-prettier": "^5.5.7",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
     "gulp": "^5.0.1",
-    "jest": "^30.2.0",
-    "n8n-workflow": "^2.9.0",
-    "prettier": "^3.8.1",
-    "release-it": "^19.2.4",
-    "ts-jest": "^29.4.6",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.0"
+    "jest": "^30.5.2",
+    "n8n-workflow": "^2.16.0",
+    "prettier": "^3.9.10",
+    "release-it": "^21.1.1",
+    "ts-jest": "^29.4.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.2"
   },
   "dependencies": {
-    "axios": "^1.13.5",
-    "discord.js": "^14.25.1",
-    "node-ipc": "npm:@achrinza/node-ipc@^10.1.11",
-    "tweetnacl": "^1.0.3"
+    "axios": "^1.20.0",
+    "discord.js": "^14.27.0",
+    "node-ipc": "^14.0.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.1.0",
     "utf-8-validate": "^6.0.6",
     "zlib-sync": "^0.1.10"
   },
-  "packageManager": "pnpm@10.30.1+sha512.3590e550d5384caa39bd5c7c739f72270234b2f6059e13018f975c313b1eb9fefcc09714048765d4d9efe961382c312e624572c0420762bdc5d5940cdf9be73a"
+  "packageManager": "pnpm@12.14.0"
 }

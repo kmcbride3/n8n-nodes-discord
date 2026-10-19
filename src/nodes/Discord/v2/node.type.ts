@@ -3,7 +3,7 @@ import type { AllEntities } from 'n8n-workflow'
 import { addRole, banUser, kickUser, removeRole, timeoutUser } from './actions/member'
 import { bulkDeleteMessages, deleteMessage, sendMessage } from './actions/message'
 import { sendButton, sendSelect } from './actions/prompt'
-import { interactionManager, utility } from './actions/utility'
+import { utility } from './actions/utility'
 import { createWebhook, sendWebhook } from './actions/webhook'
 
 /**
@@ -34,7 +34,6 @@ export type NodeMap = {
   }
   utility: {
     utility: typeof utility.execute
-    interactionManager: typeof interactionManager.execute
   }
 }
 

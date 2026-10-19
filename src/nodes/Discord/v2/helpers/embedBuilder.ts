@@ -8,7 +8,7 @@
  */
 
 import { EmbedBuilder } from 'discord.js'
-import type { IDataObject, IExecuteFunctions, INodeProperties } from 'n8n-workflow'
+import type { IDataObject, IExecuteFunctions, INode, INodeProperties } from 'n8n-workflow'
 import { NodeOperationError } from 'n8n-workflow'
 
 import { validateColorHex } from '../../shared/validation/simple-validation'
@@ -59,17 +59,21 @@ function isValidUrl(url: string): boolean {
  *
  * @param input - URL or base64 data URI
  * @param fieldName - Name of the field for error messages
+ * @param node - The n8n node (for error reporting)
+ * @param itemIndex - Current item index (for error reporting)
  * @returns Valid image URL or base64 data URI
  * @throws NodeOperationError if input is invalid
  */
-function processImageInput(input: string, fieldName: string): string {
+function processImageInput(input: string, fieldName: string, node: INode, itemIndex?: number): string {
   if (!input) return ''
 
   // Check if it's a base64 data URI
   if (input.startsWith('data:')) {
     if (!isValidBase64DataUri(input)) {
-      throw new Error(
+      throw new NodeOperationError(
+        node,
         `Invalid base64 image format for ${fieldName}. Must be data:image/(png|jpg|jpeg|gif|webp);base64,...`,
+        { itemIndex },
       )
     }
     return input
@@ -77,7 +81,11 @@ function processImageInput(input: string, fieldName: string): string {
 
   // Check if it's a valid URL
   if (!isValidUrl(input)) {
-    throw new Error(`Invalid URL for ${fieldName}. Must be a valid http/https URL or base64 data URI.`)
+    throw new NodeOperationError(
+      node,
+      `Invalid URL for ${fieldName}. Must be a valid http/https URL or base64 data URI.`,
+      { itemIndex },
+    )
   }
 
   return input
@@ -87,9 +95,11 @@ function processImageInput(input: string, fieldName: string): string {
  * Validates embed content against Discord limits
  *
  * @param embed - Embed data object to validate
+ * @param node - The n8n node (for error reporting)
+ * @param itemIndex - Current item index (for error reporting)
  * @throws NodeOperationError if any limits are exceeded
  */
-function validateEmbedLimits(embed: IDataObject): void {
+function validateEmbedLimits(embed: IDataObject, node: INode, itemIndex?: number): void {
   const errors: string[] = []
 
   if (embed.title && (embed.title as string).length > EMBED_LIMITS.TITLE) {
@@ -150,7 +160,7 @@ function validateEmbedLimits(embed: IDataObject): void {
   }
 
   if (errors.length > 0) {
-    throw new Error(`Embed validation failed:\n- ${errors.join('\n- ')}`)
+    throw new NodeOperationError(node, `Embed validation failed:\n- ${errors.join('\n- ')}`, { itemIndex })
   }
 }
 
@@ -200,7 +210,7 @@ export function buildEnhancedEmbed(context: IExecuteFunctions, itemIndex: number
     if (description) embedBuilder.setDescription(description)
     if (url) {
       if (!isValidUrl(url)) {
-        throw new Error('Embed URL must be a valid http/https URL')
+        throw new NodeOperationError(context.getNode(), 'Embed URL must be a valid http/https URL', { itemIndex })
       }
       embedBuilder.setURL(url)
     }
@@ -216,10 +226,11 @@ export function buildEnhancedEmbed(context: IExecuteFunctions, itemIndex: number
       const authorUrl = context.getNodeParameter('embedAuthorUrl', itemIndex, '') as string
 
       const authorData: { name: string; iconURL?: string; url?: string } = { name: authorName }
-      if (authorIconUrl) authorData.iconURL = processImageInput(authorIconUrl, 'Author Icon')
+      if (authorIconUrl)
+        authorData.iconURL = processImageInput(authorIconUrl, 'Author Icon', context.getNode(), itemIndex)
       if (authorUrl) {
         if (!isValidUrl(authorUrl)) {
-          throw new Error('Author URL must be a valid http/https URL')
+          throw new NodeOperationError(context.getNode(), 'Author URL must be a valid http/https URL', { itemIndex })
         }
         authorData.url = authorUrl
       }
@@ -229,13 +240,13 @@ export function buildEnhancedEmbed(context: IExecuteFunctions, itemIndex: number
     // Thumbnail (small image in top-right corner)
     const thumbnailUrl = context.getNodeParameter('embedThumbnail', itemIndex, '') as string
     if (thumbnailUrl) {
-      embedBuilder.setThumbnail(processImageInput(thumbnailUrl, 'Thumbnail'))
+      embedBuilder.setThumbnail(processImageInput(thumbnailUrl, 'Thumbnail', context.getNode(), itemIndex))
     }
 
     // Main image (large image at bottom)
     const imageUrl = context.getNodeParameter('embedImage', itemIndex, '') as string
     if (imageUrl) {
-      embedBuilder.setImage(processImageInput(imageUrl, 'Image'))
+      embedBuilder.setImage(processImageInput(imageUrl, 'Image', context.getNode(), itemIndex))
     }
 
     // Footer section
@@ -243,7 +254,8 @@ export function buildEnhancedEmbed(context: IExecuteFunctions, itemIndex: number
     if (footerText) {
       const footerIconUrl = context.getNodeParameter('embedFooterIcon', itemIndex, '') as string
       const footerData: { text: string; iconURL?: string } = { text: footerText }
-      if (footerIconUrl) footerData.iconURL = processImageInput(footerIconUrl, 'Footer Icon')
+      if (footerIconUrl)
+        footerData.iconURL = processImageInput(footerIconUrl, 'Footer Icon', context.getNode(), itemIndex)
       embedBuilder.setFooter(footerData)
     }
 
@@ -256,7 +268,11 @@ export function buildEnhancedEmbed(context: IExecuteFunctions, itemIndex: number
       if (customTimestamp) {
         const timestamp = new Date(customTimestamp)
         if (isNaN(timestamp.getTime())) {
-          throw new Error('Invalid timestamp format. Use ISO 8601 format (e.g., 2023-01-01T00:00:00Z)')
+          throw new NodeOperationError(
+            context.getNode(),
+            'Invalid timestamp format. Use ISO 8601 format (e.g., 2023-01-01T00:00:00Z)',
+            { itemIndex },
+          )
         }
         embedBuilder.setTimestamp(timestamp)
       }
@@ -272,7 +288,11 @@ export function buildEnhancedEmbed(context: IExecuteFunctions, itemIndex: number
       const validFields = fields.field.filter((field) => field.name || field.value)
 
       if (validFields.length > EMBED_LIMITS.FIELDS) {
-        throw new Error(`Too many fields. Discord allows maximum ${EMBED_LIMITS.FIELDS} fields per embed.`)
+        throw new NodeOperationError(
+          context.getNode(),
+          `Too many fields. Discord allows maximum ${EMBED_LIMITS.FIELDS} fields per embed.`,
+          { itemIndex },
+        )
       }
 
       validFields.forEach((field) => {
@@ -288,14 +308,14 @@ export function buildEnhancedEmbed(context: IExecuteFunctions, itemIndex: number
     const videoUrl = context.getNodeParameter('embedVideoUrl', itemIndex, '') as string
     if (videoUrl) {
       if (!isValidUrl(videoUrl)) {
-        throw new Error('Video URL must be a valid http/https URL')
+        throw new NodeOperationError(context.getNode(), 'Video URL must be a valid http/https URL', { itemIndex })
       }
       // Video is set via the data property in the JSON (Discord.js doesn't have setVideo)
       const embedData = embedBuilder.toJSON()
       embedData.video = { url: videoUrl }
 
       // Validate the complete embed
-      validateEmbedLimits(embedData as unknown as IDataObject)
+      validateEmbedLimits(embedData as unknown as IDataObject, context.getNode(), itemIndex)
 
       return embedData as IDataObject
     }
@@ -317,14 +337,20 @@ export function buildEnhancedEmbed(context: IExecuteFunctions, itemIndex: number
     }
 
     // Validate against Discord limits
-    validateEmbedLimits(embedData as unknown as IDataObject)
+    validateEmbedLimits(embedData as unknown as IDataObject, context.getNode(), itemIndex)
 
     return embedData as IDataObject
   } catch (error) {
-    throw new NodeOperationError(context.getNode(), `Failed to build embed: ${error.message}`, {
-      itemIndex,
-      description: 'Check your embed configuration and ensure all URLs and base64 images are valid',
-    })
+    // NodeOperationError is already properly formatted — re-throw directly
+    if (error instanceof NodeOperationError) throw error
+    throw new NodeOperationError(
+      context.getNode(),
+      `Failed to build embed: ${error instanceof Error ? error.message : String(error)}`,
+      {
+        itemIndex,
+        description: 'Check your embed configuration and ensure all URLs and base64 images are valid',
+      },
+    )
   }
 }
 

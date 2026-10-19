@@ -65,12 +65,6 @@ jest.mock('../../../../src/nodes/Discord/v2/helpers', () => {
       content: 'Test prompt message',
       components: [],
     }),
-    discordStateManager: {
-      setInteractionCollector: jest.fn(),
-      getInteractionCollector: jest.fn(),
-      removeInteractionCollector: jest.fn(),
-      storeInteractionData: jest.fn(),
-    },
   }
 })
 

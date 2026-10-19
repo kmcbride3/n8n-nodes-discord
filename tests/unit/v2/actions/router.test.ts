@@ -85,7 +85,6 @@ jest.mock('../../../../src/nodes/Discord/v2/actions/webhook', () => ({
 }))
 
 jest.mock('../../../../src/nodes/Discord/v2/actions/utility', () => ({
-  interactionManager: { execute: jest.fn().mockResolvedValue([[{ json: { success: true } }]]) },
   utility: { execute: jest.fn().mockResolvedValue([[{ json: { success: true } }]]) },
 }))
 
@@ -336,12 +335,6 @@ describe('V2 Actions Router', () => {
 
     test('should route to utility operation', async () => {
       mockContext.getNodeParameter.mockReturnValueOnce('utility')
-      const result = await router.call(mockContext)
-      expect(result).toBeDefined()
-    })
-
-    test('should route to interactionManager operation', async () => {
-      mockContext.getNodeParameter.mockReturnValueOnce('interactionManager')
       const result = await router.call(mockContext)
       expect(result).toBeDefined()
     })

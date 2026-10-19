@@ -14,6 +14,7 @@
  * - Cleanup on trigger close
  */
 
+import type { ClientEvents } from 'discord.js'
 import type { IDataObject, ITriggerFunctions, ITriggerResponse } from 'n8n-workflow'
 import { LoggerProxy, NodeOperationError } from 'n8n-workflow'
 
@@ -44,8 +45,7 @@ export async function createDiscordTrigger(this: ITriggerFunctions, triggerKey: 
   const client = await getDiscordClientWithErrorHandling.call(this, credentials, config.triggerType)
 
   // Create event handler using configuration (supports async filters for partial data fetching)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handler = async (...eventArgs: any[]) => {
+  const handler = async (...eventArgs: ClientEvents[typeof config.discordEvent]) => {
     try {
       // Apply filter if defined (supports both sync and async filters)
       if (config.filter) {

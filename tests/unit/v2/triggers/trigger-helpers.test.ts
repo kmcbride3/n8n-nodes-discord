@@ -303,8 +303,8 @@ describe('Discord V2 Trigger Helpers - New Optimization Features', () => {
       expect(client).toBeDefined()
       expect(client.on).toHaveBeenCalledWith('error', expect.any(Function))
       expect(client.on).toHaveBeenCalledWith('warn', expect.any(Function))
-      expect(client.on).toHaveBeenCalledWith('disconnect', expect.any(Function))
-      expect(client.on).toHaveBeenCalledWith('reconnecting', expect.any(Function))
+      expect(client.on).toHaveBeenCalledWith('shardDisconnect', expect.any(Function))
+      expect(client.on).toHaveBeenCalledWith('shardReconnecting', expect.any(Function))
     })
 
     test('should validate intents as part of setup', async () => {
@@ -328,8 +328,8 @@ describe('Discord V2 Trigger Helpers - New Optimization Features', () => {
       // Verify event handlers were setup (checks all 4 event listeners)
       expect(client.on).toHaveBeenCalledWith('error', expect.any(Function))
       expect(client.on).toHaveBeenCalledWith('warn', expect.any(Function))
-      expect(client.on).toHaveBeenCalledWith('disconnect', expect.any(Function))
-      expect(client.on).toHaveBeenCalledWith('reconnecting', expect.any(Function))
+      expect(client.on).toHaveBeenCalledWith('shardDisconnect', expect.any(Function))
+      expect(client.on).toHaveBeenCalledWith('shardReconnecting', expect.any(Function))
     })
   })
 
@@ -441,8 +441,8 @@ describe('Discord V2 Trigger Helpers - New Optimization Features', () => {
 
       expect(client.on).toHaveBeenCalledWith('error', expect.any(Function))
       expect(client.on).toHaveBeenCalledWith('warn', expect.any(Function))
-      expect(client.on).toHaveBeenCalledWith('disconnect', expect.any(Function))
-      expect(client.on).toHaveBeenCalledWith('reconnecting', expect.any(Function))
+      expect(client.on).toHaveBeenCalledWith('shardDisconnect', expect.any(Function))
+      expect(client.on).toHaveBeenCalledWith('shardReconnecting', expect.any(Function))
       
       // Exactly 4 listeners should be registered
       const callCount = (client.on as jest.Mock).mock.calls.length

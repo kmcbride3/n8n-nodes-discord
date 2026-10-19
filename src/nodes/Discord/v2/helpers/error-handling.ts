@@ -3,6 +3,7 @@ import {
   type IExecuteFunctions,
   type IWebhookFunctions,
   LoggerProxy,
+  NodeApiError,
   NodeOperationError,
   NodeSslError,
 } from 'n8n-workflow'
@@ -75,8 +76,10 @@ export function handleDiscordError(
       .filter(Boolean)
       .join(' | ')
 
-    // Use NodeOperationError for Discord API errors with enhanced context
-    throw new NodeOperationError(node, `${operation} failed: ${userMessage}`, {
+    // Use NodeApiError for Discord API errors — this is an HTTP/API failure from Discord's servers
+    throw new NodeApiError(node, error as unknown as { message: string }, {
+      httpCode: String(error.status),
+      message: `${operation} failed: ${userMessage}`,
       description: context_description,
       itemIndex,
     })
@@ -94,7 +97,9 @@ export function handleDiscordError(
       .filter(Boolean)
       .join(' | ')
 
-    throw new NodeOperationError(node, `Rate limit exceeded in ${operation}`, {
+    throw new NodeApiError(node, error as unknown as { message: string }, {
+      httpCode: '429',
+      message: `Rate limit exceeded in ${operation}`,
       description: rateContext,
       itemIndex,
     })
@@ -102,7 +107,9 @@ export function handleDiscordError(
 
   if (error instanceof HTTPError) {
     // HTTP error from Discord.js REST operations
-    throw new NodeOperationError(node, `HTTP Error in ${operation}: ${error.message}`, {
+    throw new NodeApiError(node, error as unknown as { message: string }, {
+      httpCode: String(error.status),
+      message: `HTTP Error in ${operation}: ${error.message}`,
       description: `Discord.js encountered HTTP ${error.status}: ${error.message}`,
       itemIndex,
     })

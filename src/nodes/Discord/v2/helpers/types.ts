@@ -11,6 +11,3 @@ export interface IDiscordFile {
   description?: string
   content_type?: string
 }
-
-// Re-export shared performance metrics interface
-export type { IDiscordPerformanceMetrics } from '../../shared/types/shared-interfaces'

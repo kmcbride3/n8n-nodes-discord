@@ -25,6 +25,14 @@ import {
 } from '../../../../src/nodes/Discord/v2/helpers/type-helpers'
 
 describe('V2 Helper Modules - Type Helpers', () => {
+  const mockNode = {
+    id: 'test-node-id',
+    name: 'Test Node',
+    type: 'test-type',
+    typeVersion: 1,
+    position: [0, 0] as [number, number],
+    parameters: {},
+  }
   describe('toIDataObject', () => {
     test('should convert object to IDataObject', () => {
       const data = { key: 'value', number: 123 }
@@ -85,7 +93,7 @@ describe('V2 Helper Modules - Type Helpers', () => {
         version: 1,
       }
       
-      const result = toAPIInteraction(interaction)
+      const result = toAPIInteraction(interaction, mockNode)
       
       expect(result).toBe(interaction)
       expect(result.id).toBe('123456789')
@@ -100,7 +108,7 @@ describe('V2 Helper Modules - Type Helpers', () => {
         version: 1,
       })
       
-      const result = toAPIInteraction(interactionJson)
+      const result = toAPIInteraction(interactionJson, mockNode)
       
       expect(result.id).toBe('987654321')
       expect(result.type).toBe(3)
@@ -108,18 +116,18 @@ describe('V2 Helper Modules - Type Helpers', () => {
     })
 
     test('should throw NodeOperationError for null value', () => {
-      expect(() => toAPIInteraction(null)).toThrow(NodeOperationError)
-      expect(() => toAPIInteraction(null)).toThrow('Missing interaction data')
+      expect(() => toAPIInteraction(null, mockNode)).toThrow(NodeOperationError)
+      expect(() => toAPIInteraction(null, mockNode)).toThrow('Missing interaction data')
     })
 
     test('should throw NodeOperationError for undefined value', () => {
-      expect(() => toAPIInteraction(undefined)).toThrow(NodeOperationError)
-      expect(() => toAPIInteraction(undefined)).toThrow('Missing interaction data')
+      expect(() => toAPIInteraction(undefined, mockNode)).toThrow(NodeOperationError)
+      expect(() => toAPIInteraction(undefined, mockNode)).toThrow('Missing interaction data')
     })
 
     test('should throw NodeOperationError for invalid JSON string', () => {
-      expect(() => toAPIInteraction('invalid json {')).toThrow(NodeOperationError)
-      expect(() => toAPIInteraction('invalid json {')).toThrow('Invalid interaction JSON')
+      expect(() => toAPIInteraction('invalid json {', mockNode)).toThrow(NodeOperationError)
+      expect(() => toAPIInteraction('invalid json {', mockNode)).toThrow('Invalid interaction JSON')
     })
 
     test('should handle complex interaction objects', () => {
@@ -137,7 +145,7 @@ describe('V2 Helper Modules - Type Helpers', () => {
         channel_id: '012',
       }
       
-      const result = toAPIInteraction(interaction)
+      const result = toAPIInteraction(interaction, mockNode)
       
       expect(result).toBe(interaction)
       expect(result.data).toBeDefined()
@@ -145,26 +153,17 @@ describe('V2 Helper Modules - Type Helpers', () => {
     })
 
     test('should accept node parameter for error context', () => {
-      const mockNode = {
-        id: 'test-node',
-        name: 'Test Node',
-        type: 'test-type',
-        typeVersion: 1,
-        position: [0, 0] as [number, number],
-        parameters: {},
-      }
-      
       expect(() => toAPIInteraction(null, mockNode)).toThrow(NodeOperationError)
     })
 
     test('should handle empty JSON object string', () => {
-      const result = toAPIInteraction('{}')
+      const result = toAPIInteraction('{}', mockNode)
       
       expect(result).toEqual({})
     })
 
     test('should handle JSON array string', () => {
-      const result = toAPIInteraction('[1, 2, 3]')
+      const result = toAPIInteraction('[1, 2, 3]', mockNode)
       
       expect(result).toEqual([1, 2, 3])
     })
@@ -359,7 +358,7 @@ describe('V2 Helper Modules - Type Helpers', () => {
 
     test('toAPIInteraction should provide helpful error messages', () => {
       try {
-        toAPIInteraction(null)
+        toAPIInteraction(null, mockNode)
         fail('Should have thrown an error')
       } catch (error) {
         expect(error).toBeInstanceOf(NodeOperationError)

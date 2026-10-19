@@ -128,7 +128,7 @@ class DiscordClientManager {
       LoggerProxy.error('Discord client error:', { error })
     })
 
-    client.on('disconnect', () => {
+    client.on('shardDisconnect', () => {
       const clientKey = this.getClientKey(options.token)
       const state = this.clientPool.get(clientKey)
       if (state) {

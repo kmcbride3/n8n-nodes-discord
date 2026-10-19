@@ -22,29 +22,13 @@ export const toIDataObject = <T = unknown>(value: unknown): T => {
 }
 
 /**
- * Creates a minimal INode object for error context when real node is not available
- *
- * @returns A minimal INode object for error reporting
- */
-function createMinimalNode(): INode {
-  return {
-    id: 'type-helper-node',
-    name: 'Type Helper',
-    type: 'n8n-nodes-discord.type-helpers',
-    typeVersion: 1,
-    position: [0, 0],
-    parameters: {},
-  }
-}
-
-/**
  * Converts unknown value to APIInteraction with validation
  *
  * Ensures the value is a valid Discord API interaction object. Handles both
  * JSON string and object formats. Uses n8n error types for proper workflow integration.
  *
  * @param value - The value to convert (object or JSON string)
- * @param node - Optional n8n node for error context
+ * @param node - n8n node for error context
  * @returns The validated APIInteraction object
  * @throws NodeOperationError if value is null, undefined, or invalid
  *
@@ -52,9 +36,9 @@ function createMinimalNode(): INode {
  * const interaction = toAPIInteraction(webhookBody, this.getNode());
  * console.log(interaction.type, interaction.id);
  */
-export const toAPIInteraction = (value: unknown, node?: INode): APIInteraction => {
+export const toAPIInteraction = (value: unknown, node: INode): APIInteraction => {
   if (value === null || value === undefined) {
-    throw new NodeOperationError(node || createMinimalNode(), 'Missing interaction data', {
+    throw new NodeOperationError(node, 'Missing interaction data', {
       description: 'Interaction data is required for this operation. Ensure the webhook payload is valid.',
     })
   }
@@ -63,7 +47,7 @@ export const toAPIInteraction = (value: unknown, node?: INode): APIInteraction =
     try {
       return JSON.parse(value) as APIInteraction
     } catch (error) {
-      throw new NodeOperationError(node || createMinimalNode(), 'Invalid interaction JSON', {
+      throw new NodeOperationError(node, 'Invalid interaction JSON', {
         description: `Failed to parse interaction data: ${error instanceof Error ? error.message : String(error)}`,
       })
     }
